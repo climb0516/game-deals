@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<!-- Created by 青云 on 2026/10/21. -->
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark light">
+  <title>喜加一 · Game Deals</title>
+  <meta name="description" content="Epic 每周限免、全平台免费领取、Steam 国区特惠与史低、Steam 大促日历、PS Plus 与 Game Pass">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎁</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0910;
+      --panel: #14121c;
+      --panel-2: #1c1926;
+      --hover: rgba(255,255,255,0.04);
+      --line: rgba(255,255,255,0.07);
+      --line-2: rgba(255,255,255,0.14);
+      --text-1: #f1eff7;
+      --text-2: #a39fb3;
+      --text-3: #6b677a;
+      --accent: #a3e635;
+      --accent-ink: #172003;
+      --grad: linear-gradient(120deg, #a3e635 0%, #22d3ee 55%, #c084fc 100%);
+      --sale: #a3e635;
+      --low: #f43f5e;
+      --warn: #fbbf24;
+      --shadow: 0 0 0 1px var(--line), 0 12px 32px rgba(0,0,0,0.35);
+    }
+    :root[data-theme="light"] {
+      --bg: #f7f6fb;
+      --panel: #ffffff;
+      --panel-2: #f1eff7;
+      --hover: rgba(30,20,60,0.035);
+      --line: rgba(30,20,60,0.08);
+      --line-2: rgba(30,20,60,0.16);
+      --text-1: #17131f;
+      --text-2: #575166;
+      --text-3: #9a95a8;
+      --accent: #4d7c0f;
+      --accent-ink: #ffffff;
+      --sale: #4d7c0f;
+      --low: #e11d48;
+      --warn: #b45309;
+      --shadow: 0 0 0 1px var(--line), 0 10px 28px rgba(30,20,60,0.06);
+    }
+
+    body {
+      background: var(--bg); color: var(--text-1);
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;
+      font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    button, select { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
+    .num { font-variant-numeric: tabular-nums; }
+    .muted { color: var(--text-3); font-size: 12px; }
+
+    .topbar { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 94%, transparent); border-bottom: 1px solid var(--line); }
+    .topbar-inner { max-width: 1240px; margin: 0 auto; padding: 12px 20px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 17px; letter-spacing: -0.02em; white-space: nowrap; }
+    .logo-mark { width: 30px; height: 30px; border-radius: 9px; background: var(--grad); display: grid; place-items: center; font-size: 16px; }
+    .logo small { font-weight: 500; color: var(--text-3); font-size: 12px; margin-left: 2px; }
+    .seg { display: inline-flex; background: var(--hover); border: 1px solid var(--line); border-radius: 10px; padding: 3px; flex-wrap: wrap; }
+    .seg button { padding: 5px 12px; border-radius: 7px; font-size: 13px; color: var(--text-2); font-weight: 600; white-space: nowrap; }
+    .seg button:hover { color: var(--text-1); }
+    .seg button.active { background: var(--panel); color: var(--text-1); box-shadow: 0 0 0 1px var(--line-2); }
+    .spacer { flex: 1; }
+    .updated { font-size: 12px; color: var(--text-3); white-space: nowrap; }
+    .icon-btn { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); display: grid; place-items: center; color: var(--text-2); flex-shrink: 0; }
+    .icon-btn:hover { color: var(--text-1); border-color: var(--line-2); }
+    .icon-btn.spin svg { animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .layout { max-width: 1240px; margin: 0 auto; padding: 22px 20px 60px; display: grid; grid-template-columns: minmax(0,1fr) 300px; gap: 22px; }
+    .aside { position: sticky; top: 76px; align-self: start; display: flex; flex-direction: column; gap: 14px; }
+    .panel { background: var(--panel); border-radius: 14px; box-shadow: var(--shadow); }
+    .widget { padding: 16px; }
+    .widget h3 { font-size: 13px; font-weight: 700; color: var(--text-2); margin-bottom: 12px; }
+    .view { display: none; }
+    .view.active { display: block; }
+    .section-title { font-size: 15px; font-weight: 700; margin: 24px 0 12px; display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+    .section-title:first-child { margin-top: 0; }
+    .section-title small { color: var(--text-3); font-weight: 500; font-size: 12px; }
+
+    .filters { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px; }
+    .chip { padding: 5px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-2); font-size: 12.5px; font-weight: 600; white-space: nowrap; }
+    .chip:hover { border-color: var(--line-2); color: var(--text-1); }
+    .chip.active { background: var(--text-1); color: var(--bg); border-color: var(--text-1); }
+    .chip small { font-weight: 500; opacity: .7; margin-left: 3px; }
+    .sel { padding: 5px 10px; border-radius: 9px; border: 1px solid var(--line-2); font-size: 12.5px; font-weight: 600; background: var(--panel); }
+    .toggle { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--text-2); cursor: pointer; user-select: none; white-space: nowrap; }
+    .toggle input { accent-color: var(--accent); }
+
+    /* Epic 主卡 */
+    .epic-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+    .epic { overflow: hidden; display: flex; flex-direction: column; }
+    .epic .img { aspect-ratio: 16/9; background: var(--panel-2) center/cover no-repeat; position: relative; }
+    .epic .badge { position: absolute; left: 10px; top: 10px; font-size: 11.5px; font-weight: 800; padding: 3px 9px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+    .epic .badge.next { background: var(--panel); color: var(--text-1); box-shadow: 0 0 0 1px var(--line-2); }
+    .epic .body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+    .epic b { font-size: 15px; }
+    .epic .meta { display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px; color: var(--text-2); }
+    .epic .meta s { color: var(--text-3); }
+    .epic .cd { font-weight: 700; color: var(--warn); }
+    .epic .go { margin-top: auto; padding-top: 8px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 7px 14px; border-radius: 10px; border: 1px solid var(--line-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .btn:hover { background: var(--hover); }
+    .btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .btn.primary:hover { filter: brightness(1.08); }
+    .hero-line { padding: 16px 18px; margin-bottom: 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+    .hero-line .big { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
+    .hero-line .big em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+    /* 列表行 */
+    .list { overflow: hidden; }
+    .gv { display: grid; grid-template-columns: 92px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+    .gv:last-child { border-bottom: 0; }
+    .gv:hover { background: var(--hover); }
+    .gv img { width: 92px; height: 43px; object-fit: cover; border-radius: 6px; background: var(--panel-2); }
+    .gv .t { min-width: 0; }
+    .gv .t b { display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .gv .t span { font-size: 12px; color: var(--text-3); }
+    .gv .r { text-align: right; font-size: 12.5px; color: var(--text-2); white-space: nowrap; }
+    .plat { display: inline-block; font-size: 10.5px; font-weight: 700; padding: 0 6px; border-radius: 5px; background: var(--panel-2); color: var(--text-2); margin-right: 4px; }
+
+    /* Steam 卡片 */
+    .deals { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 12px; }
+    .deal { overflow: hidden; display: flex; flex-direction: column; }
+    .deal:hover { box-shadow: 0 0 0 1px var(--line-2), 0 12px 32px rgba(0,0,0,0.2); }
+    .deal img { width: 100%; aspect-ratio: 231/87; object-fit: cover; display: block; background: var(--panel-2); }
+    .deal .body { padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 5px; flex: 1; }
+    .deal b { font-weight: 600; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .deal .rv { font-size: 11.5px; color: var(--text-3); }
+    .deal .rv.good { color: #60a5fa; }
+    .deal .price { display: flex; align-items: center; gap: 8px; margin-top: auto; }
+    .disc { font-weight: 800; font-size: 13px; padding: 1px 7px; border-radius: 6px; background: color-mix(in srgb, var(--sale) 18%, transparent); color: var(--sale); }
+    .deal .price s { color: var(--text-3); font-size: 12px; }
+    .deal .price strong { font-size: 16px; font-weight: 800; margin-left: auto; }
+    .tag-low { white-space: nowrap; font-size: 10.5px; font-weight: 800; color: #fff; background: var(--low); border-radius: 5px; padding: 0 6px; }
+    .tag-low.cn { background: transparent; color: var(--low); box-shadow: inset 0 0 0 1px var(--low); }
+    .more { display: block; width: 100%; padding: 10px; margin-top: 12px; border-radius: 12px; border: 1px dashed var(--line-2); color: var(--text-2); font-weight: 600; font-size: 13px; }
+    .more:hover { color: var(--text-1); }
+
+    /* 大促 */
+    .sale { padding: 16px 18px; display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 6px 16px; align-items: center; margin-bottom: 12px; }
+    .sale b { font-size: 16px; }
+    .sale .cd { text-align: right; font-size: 22px; font-weight: 800; }
+    .sale .cd small { font-size: 12px; font-weight: 600; color: var(--text-2); margin-left: 2px; }
+    .sale .bar { grid-column: 1 / -1; height: 5px; border-radius: 999px; background: var(--panel-2); overflow: hidden; }
+    .sale .bar i { display: block; height: 100%; background: var(--grad); }
+    .sale.on { box-shadow: 0 0 0 2px var(--accent); }
+
+    /* 主机 */
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .box { padding: 16px 18px; }
+    .box h4 { font-size: 14px; margin-bottom: 4px; }
+    .box ul { list-style: none; margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+    .box li { font-size: 13.5px; padding-left: 14px; position: relative; }
+    .box li::before { content: "•"; position: absolute; left: 2px; color: var(--accent); }
+    .gp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; }
+    .gp { display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; }
+    .gp img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 10px; background: var(--panel-2); }
+    .gp span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+
+    .kv { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; padding: 6px 0; border-bottom: 1px dashed var(--line); }
+    .kv:last-child { border-bottom: 0; }
+    .kv span:first-child { color: var(--text-2); }
+    .kv b { font-weight: 700; text-align: right; }
+    .count-big { font-size: 36px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+    .count-big small { font-size: 13px; font-weight: 600; color: var(--text-2); margin-left: 4px; }
+    .src { display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding: 3px 0; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
+    .dot.bad { background: var(--low); }
+    .empty { padding: 30px; text-align: center; color: var(--text-3); }
+    .toast { position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px); opacity: 0; background: var(--text-1); color: var(--bg); padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 600; transition: .2s; pointer-events: none; z-index: 50; }
+    .toast.show { opacity: 1; transform: translateX(-50%); }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: minmax(0,1fr); }
+      .aside { position: static; }
+    }
+    @media (max-width: 640px) {
+      .topbar-inner { padding: 10px 16px; gap: 10px; }
+      .layout { padding: 16px 16px 48px; }
+      .logo small, .updated { display: none; }
+      .cols { grid-template-columns: 1fr; }
+      .gv { grid-template-columns: 72px minmax(0,1fr); }
+      .gv img { width: 72px; height: 34px; }
+      .gv .r { grid-column: 2; text-align: left; }
+      .deals { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+      .deal .price s { display: none; }
+      .deal .price { gap: 6px; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="logo"><div class="logo-mark">🎁</div>喜加一<small>Game Deals</small></div>
+      <div class="seg" id="viewSeg">
+        <button data-v="free" class="active">限免</button>
+        <button data-v="steam">Steam 特惠</button>
+        <button data-v="sales">大促日历</button>
+        <button data-v="console">主机</button>
+      </div>
+      <div class="spacer"></div>
+      <span class="updated" id="updated">加载中…</span>
+      <button class="icon-btn" id="reloadBtn" title="重新读取数据"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg></button>
+      <a class="icon-btn" href="https://github.com/climb0516/game-deals/actions/workflows/scrape.yml" target="_blank" rel="noopener" title="到 GitHub Actions 手动触发抓取">⚡</a>
+      <button class="icon-btn" id="themeBtn" title="深浅色">☾</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <main>
+      <section class="view active" id="view-free"></section>
+      <section class="view" id="view-steam">
+        <div class="filters" id="steamFilters"></div>
+        <div class="deals" id="deals"></div>
+        <div id="dealsMore"></div>
+      </section>
+      <section class="view" id="view-sales"></section>
+      <section class="view" id="view-console"></section>
+    </main>
+
+    <aside class="aside">
+      <div class="panel widget" id="epicBox"></div>
+      <div class="panel widget" id="saleBox"></div>
+      <div class="panel widget">
+        <h3>订阅提醒</h3>
+        <p class="muted" style="margin-bottom:10px">Steam 大促开始前一天提醒，Epic 本周限免结束前提醒。订阅一次，日历自动更新。</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a class="btn primary" id="subBtn" href="#">订阅日历</a>
+          <button class="btn" id="copySub">复制链接</button>
+        </div>
+      </div>
+      <div class="panel widget">
+        <h3>数据来源</h3>
+        <div id="sources"></div>
+        <p class="muted" style="margin-top:10px">价格为 Steam 国区 / Epic 国区人民币，以商店页为准。「史低」= 美区当前价已到 CheapShark 记录的历史最低；「国区新低」= 本站记录 ≥ 7 天以来的最低价。</p>
+      </div>
+    </aside>
+  </div>
+  <div class="toast" id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('gd.' + k); return v === null ? d : JSON.parse(v); } catch { return d; } },
+  set(k, v) { try { localStorage.setItem('gd.' + k, JSON.stringify(v)); } catch {} },
+};
+const SITE = 'https://climb0516.github.io/game-deals/';
+const VIEWS = ['free', 'steam', 'sales', 'console'];
+
+let DATA = null;
+const state = {
+  view: VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : store.get('view', 'free'),
+  plat: 'all', loot: store.get('loot', false),
+  price: store.get('price', 0), disc: store.get('disc', 0), rate: store.get('rate', 0),
+  sort: store.get('sort', 'rank'), lowOnly: store.get('lowOnly', false), shown: 60,
+};
+
+// ── 时间工具 ──
+const ms = iso => iso ? new Date(iso).getTime() : null;
+function left(iso) {
+  const s = Math.max(0, (ms(iso) - Date.now()) / 1000);
+  const d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60);
+  return d ? `${d} 天 ${h} 小时` : h ? `${h} 小时 ${m} 分` : `${m} 分钟`;
+}
+const mdhm = iso => { const d = new Date(iso); return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`; };
+const md = s => { const [, m, d] = s.split('-'); return `${+m}/${+d}`; };
+const yuan = v => v == null ? '' : '¥' + (Number.isInteger(v) ? v : v.toFixed(2));
+const steamImg = id => `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${id}/capsule_231x87.jpg`;
+
+// ── 限免 ──
+function epicCard(g) {
+  const now = g.kind === 'now';
+  return `<a class="panel epic" href="${esc(g.url)}" target="_blank" rel="noopener">
+    <div class="img" style="background-image:url('${esc(g.img)}')"><span class="badge ${now ? '' : 'next'}">${now ? '本周免费' : '下周预告'}</span></div>
+    <div class="body"><b>${esc(g.title)}</b>
+      <div class="meta"><span>原价 <s>${yuan(g.worth)}</s></span><span class="${now ? 'cd' : ''}">${now ? `剩 ${left(g.end)}` : `${mdhm(g.start)} 开始`}</span></div>
+      <div class="muted">${now ? `领取截止 ${mdhm(g.end)}` : `免费至 ${mdhm(g.end)}`}</div>
+      <div class="go">${now ? '<span class="btn primary" style="width:100%">去 Epic 领取</span>' : '<span class="btn" style="width:100%">查看商店页</span>'}</div>
+    </div></a>`;
+}
+function renderFree() {
+  const ep = DATA.epic, now = ep.filter(g => g.kind === 'now');
+  const epicTitles = new Set(ep.map(g => g.title.toLowerCase()));
+  const gv = DATA.giveaways.filter(g => !(g.platforms.includes('Epic') && [...epicTitles].some(t => g.title.toLowerCase().includes(t.slice(0, 8)))));
+  const pool = gv.filter(g => (g.type === 'game') !== state.loot);
+  const plats = [...new Set(pool.flatMap(g => g.platforms))].sort();
+  const list = pool.filter(g => state.plat === 'all' || g.platforms.includes(state.plat));
+  const worth = now.reduce((s, g) => s + g.worth, 0);
+  $('#view-free').innerHTML = `
+    <div class="panel hero-line"><span class="big">本周 Epic 送 <em>${now.length}</em> 款，原价合计 <em>${yuan(Math.round(worth * 100) / 100)}</em></span>
+      <span class="muted">${now[0]?.end ? `还剩 ${left(now[0].end)} · 每周四 23:00 更新` : ''}</span></div>
+    <div class="epic-grid">${ep.map(epicCard).join('') || '<div class="panel empty">暂无 Epic 限免</div>'}</div>
+    <div class="section-title">全平台免费领取<small>Steam / GOG / Ubisoft / itch.io / PS / Xbox 等，来自 GamerPower</small></div>
+    <div class="filters">
+      <div class="seg"><button data-loot="0" class="${state.loot ? '' : 'active'}">完整游戏</button><button data-loot="1" class="${state.loot ? 'active' : ''}">道具 / 礼包</button></div>
+      <button class="chip ${state.plat === 'all' ? 'active' : ''}" data-plat="all">全部<small>${pool.length}</small></button>
+      ${plats.map(p => `<button class="chip ${state.plat === p ? 'active' : ''}" data-plat="${esc(p)}">${esc(p)}<small>${pool.filter(g => g.platforms.includes(p)).length}</small></button>`).join('')}
+    </div>
+    <div class="panel list">${list.map(g => `<a class="gv" href="${esc(g.url)}" target="_blank" rel="noopener">
+      <img src="${esc(g.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="t"><b>${esc(g.title)}</b><span>${g.platforms.map(p => `<span class="plat">${esc(p)}</span>`).join('')}${g.worth ? `原价 ${esc(g.worth)}` : ''}</span></div>
+      <div class="r">${g.end ? `剩 ${left(g.end)}` : '截止时间未知'}<br><span class="muted">${g.users.toLocaleString()} 人已领</span></div>
+    </a>`).join('') || '<div class="empty">暂无</div>'}</div>`;
+}
+
+// ── Steam 特惠 ──
+function steamList() {
+  let l = DATA.steam.filter(g => (!state.price || g.price <= state.price) && g.discount >= state.disc && (!state.rate || (g.rate ?? 0) >= state.rate) && (!state.lowOnly || g.usd_low || g.cn_low));
+  const by = { rank: (a, b) => a.rank - b.rank, disc: (a, b) => b.discount - a.discount || a.rank - b.rank, price: (a, b) => a.price - b.price, rate: (a, b) => (b.rate ?? 0) - (a.rate ?? 0) || b.reviews - a.reviews };
+  return l.sort(by[state.sort]);
+}
+function renderSteam() {
+  const sel = (id, cur, opts) => `<select class="sel" id="${id}">${opts.map(([v, n]) => `<option value="${v}" ${String(cur) === String(v) ? 'selected' : ''}>${n}</option>`).join('')}</select>`;
+  const list = steamList();
+  $('#steamFilters').innerHTML =
+    sel('fSort', state.sort, [['rank', '按热销'], ['disc', '折扣最大'], ['price', '价格最低'], ['rate', '好评最高']]) +
+    sel('fPrice', state.price, [[0, '不限价格'], [10, '≤ ¥10'], [30, '≤ ¥30'], [60, '≤ ¥60'], [100, '≤ ¥100']]) +
+    sel('fDisc', state.disc, [[0, '不限折扣'], [50, '5 折及以下'], [75, '2.5 折及以下'], [90, '1 折及以下']]) +
+    sel('fRate', state.rate, [[0, '不限好评'], [70, '好评 ≥ 70%'], [80, '特别好评 ≥ 80%'], [90, '好评如潮 ≥ 90%']]) +
+    `<label class="toggle"><input type="checkbox" id="fLow" ${state.lowOnly ? 'checked' : ''}>只看史低</label>
+     <span class="spacer"></span><span class="muted">${list.length} / ${DATA.steam.length} 款 · 热销特惠前 ${DATA.steam.length}</span>`;
+  $('#deals').innerHTML = list.slice(0, state.shown).map(g => `<a class="panel deal" href="https://store.steampowered.com/app/${g.appid}/" target="_blank" rel="noopener">
+      <img src="${esc(g.img || steamImg(g.appid))}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="body"><b title="${esc(g.title)}">${esc(g.title)}</b>
+        <span class="rv ${g.rate >= 80 ? 'good' : ''}">${esc(g.review || '暂无评测')}${g.rate != null ? ` · ${g.rate}%` : ''}${g.reviews ? ` · ${g.reviews.toLocaleString()} 评` : ''}</span>
+        <div class="price"><span class="disc">-${g.discount}%</span><s>${yuan(g.orig)}</s>${g.usd_low ? `<span class="tag-low" title="美区现价 $${g.usd} = 历史最低">史低</span>` : g.cn_low ? '<span class="tag-low cn">国区新低</span>' : ''}<strong class="num">${yuan(g.price)}</strong></div>
+      </div></a>`).join('') || '<div class="panel empty" style="grid-column:1/-1">没有符合条件的游戏</div>';
+  $('#dealsMore').innerHTML = list.length > state.shown ? `<button class="more" id="moreDeals">再显示 60 款（还有 ${list.length - state.shown}）</button>` : '';
+}
+
+// ── 大促日历 ──
+function renderSales() {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const evs = DATA.events.filter(e => new Date(e.end + 'T23:59:59') >= today);
+  $('#view-sales').innerHTML = `<div class="section-title">Steam 官方大促<small>来自 Steamworks 文档「Upcoming Events」，北京时间通常在开始日凌晨 1 点开启</small></div>` +
+    (evs.map(e => {
+      const s = new Date(e.start + 'T00:00:00'), en = new Date(e.end + 'T23:59:59');
+      const on = Date.now() >= s && Date.now() <= en;
+      const days = Math.ceil((s - today) / 864e5), total = Math.round((Date.parse(e.end) - Date.parse(e.start)) / 864e5);
+      const pct = on ? Math.min(100, (Date.now() - s) / (en - s) * 100) : 0;
+      return `<div class="panel sale ${on ? 'on' : ''}"><div><b>Steam ${esc(e.cn || e.name)}</b><div class="muted">${esc(e.name)} · ${md(e.start)} – ${md(e.end)} · ${total + 1} 天</div></div>
+        <div class="cd num">${on ? `进行中<small>剩 ${Math.ceil((en - Date.now()) / 864e5)} 天</small>` : `${days}<small>天后</small>`}</div>
+        ${on ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ''}</div>`;
+    }).join('') || '<div class="panel empty">暂无公布的大促</div>') +
+    `<div class="section-title">Epic 规律<small>非官方日程</small></div>
+     <div class="panel box"><ul><li>每周四 23:00（北京时间）更新限免，一般 1～2 款，假期前后有时是神秘游戏</li><li>每年 12 月中旬到 1 月初的「假日特卖」期间，通常每天送一款</li><li>Epic 大促通常和 Steam 冬促、夏促同期</li></ul></div>`;
+}
+
+// ── 主机 ──
+function renderConsole() {
+  const ps = DATA.ps_plus, mon = ps.find(p => p.kind === 'monthly'), cat = ps.find(p => p.kind === 'catalog');
+  const box = (p, title, note) => p ? `<a class="panel box" href="${esc(p.url)}" target="_blank" rel="noopener"><h4>${title} · ${esc(p.month)}</h4><div class="muted">${note} · 官方博客 ${p.date}</div>
+      <ul>${p.games.map(g => `<li>${esc(g)}</li>`).join('')}${p.more ? '<li class="muted">更多见原文</li>' : ''}</ul></a>` : '';
+  const cg = DATA.giveaways.filter(g => g.platforms.some(p => ['PlayStation', 'Xbox', 'Switch'].includes(p)));
+  $('#view-console').innerHTML = `<div class="section-title">PlayStation Plus<small>英文标题来自美区博客，港服内容基本一致</small></div>
+    <div class="cols">${box(mon, '每月游戏', '二档及以上会员免费领取')}${box(cat, '游戏目录', '高级 / 至尊会员可玩')}</div>
+    <div class="section-title">Xbox Game Pass 最近新增<small>港区</small></div>
+    <div class="panel box"><div class="gp-grid">${DATA.game_pass.map(g => `<a class="gp" href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.img)}?w=240" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span title="${esc(g.title)}">${esc(g.title)}</span></a>`).join('')}</div></div>
+    <div class="section-title">主机平台免费领取<small>道具、礼包、试玩等</small></div>
+    <div class="panel list">${cg.map(g => `<a class="gv" href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+      <div class="t"><b>${esc(g.title)}</b><span>${g.platforms.map(p => `<span class="plat">${esc(p)}</span>`).join('')}</span></div>
+      <div class="r">${g.end ? `剩 ${left(g.end)}` : '截止时间未知'}</div></a>`).join('') || '<div class="empty">暂无</div>'}</div>`;
+}
+
+// ── 侧栏 ──
+function renderAside() {
+  const now = DATA.epic.filter(g => g.kind === 'now'), next = DATA.epic.filter(g => g.kind === 'next');
+  const end = now.map(g => g.end).filter(Boolean).sort()[0];
+  $('#epicBox').innerHTML = `<h3>Epic 本周限免</h3>
+    ${end ? `<div class="count-big num">${left(end).split(' ').slice(0, 2).join('')}<small>后结束</small></div>` : ''}
+    <div style="margin-top:10px">${now.map(g => `<div class="kv"><span>${esc(g.title)}</span><b>${yuan(g.worth)}</b></div>`).join('')}
+    ${next.length ? `<div class="kv"><span>下周</span><b>${next.map(g => esc(g.title)).join('<br>')}</b></div>` : ''}</div>`;
+  const today = new Date().toISOString().slice(0, 10);
+  const sale = DATA.events.find(e => e.end >= today);
+  $('#saleBox').innerHTML = `<h3>下一个 Steam 大促</h3>` + (sale ? (() => {
+    const s = new Date(sale.start + 'T00:00:00'), on = Date.now() >= s;
+    return `<div class="count-big num">${on ? '进行中' : Math.ceil((s - Date.now()) / 864e5)}<small>${on ? '' : '天后'}</small></div><div class="kv" style="margin-top:8px"><span>Steam ${esc(sale.cn || sale.name)}</span><b>${md(sale.start)} – ${md(sale.end)}</b></div>`;
+  })() : '<div class="muted">暂无</div>') +
+    `<div class="kv"><span>当前史低</span><b class="num">${DATA.steam.filter(g => g.usd_low || g.cn_low).length} 款</b></div>`;
+  $('#sources').innerHTML = DATA.sources.map(s => `<div class="src"><span class="dot ${s.ok ? '' : 'bad'}"></span><span style="flex:1">${esc(s.name)}</span><span class="muted num">${s.ok ? s.count : '失败'}</span></div>`).join('');
+}
+
+function render() {
+  document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === state.view));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + state.view));
+  ({ free: renderFree, steam: renderSteam, sales: renderSales, console: renderConsole })[state.view]();
+  renderAside();
+}
+
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 1600);
+}
+
+document.addEventListener('click', ev => {
+  let b;
+  if ((b = ev.target.closest('#viewSeg button'))) { state.view = b.dataset.v; store.set('view', state.view); history.replaceState(null, '', '#' + state.view); render(); scrollTo(0, 0); }
+  else if ((b = ev.target.closest('[data-plat]'))) { state.plat = b.dataset.plat; renderFree(); }
+  else if ((b = ev.target.closest('[data-loot]'))) { state.loot = b.dataset.loot === '1'; state.plat = 'all'; store.set('loot', state.loot); renderFree(); }
+  else if ((b = ev.target.closest('#moreDeals'))) { state.shown += 60; renderSteam(); }
+});
+document.addEventListener('change', ev => {
+  const t = ev.target, map = { fSort: 'sort', fPrice: 'price', fDisc: 'disc', fRate: 'rate' };
+  if (map[t.id]) { const k = map[t.id]; state[k] = k === 'sort' ? t.value : Number(t.value); store.set(k, state[k]); state.shown = 60; renderSteam(); }
+  if (t.id === 'fLow') { state.lowOnly = t.checked; store.set('lowOnly', state.lowOnly); state.shown = 60; renderSteam(); }
+});
+$('#subBtn').href = (SITE + 'sales.ics').replace(/^https:/, 'webcal:');
+$('#copySub').onclick = () => navigator.clipboard?.writeText(SITE + 'sales.ics').then(() => toast('链接已复制'), () => toast('复制失败'));
+
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $('#themeBtn').textContent = t === 'dark' ? '☾' : '☀';
+}
+applyTheme(store.get('theme', matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+$('#themeBtn').onclick = () => { const t = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; store.set('theme', t); applyTheme(t); };
+
+async function load() {
+  const btn = $('#reloadBtn'); btn.classList.add('spin');
+  try {
+    const r = await fetch('data.json?t=' + Date.now(), { cache: 'no-store' });
+    DATA = await r.json();
+    const u = new Date(DATA.updated);
+    $('#updated').textContent = `更新于 ${u.getMonth() + 1}/${u.getDate()} ${String(u.getHours()).padStart(2, '0')}:${String(u.getMinutes()).padStart(2, '0')}`;
+    render();
+  } catch (err) {
+    $('#updated').textContent = '数据读取失败';
+    console.error(err);
+  } finally { btn.classList.remove('spin'); }
+}
+$('#reloadBtn').onclick = load;
+setInterval(() => DATA && renderAside(), 60e3);      // 每分钟刷新倒计时
+load();
+</script>
+</body>
+</html>
