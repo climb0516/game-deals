@@ -148,19 +148,28 @@ SALE_CN = {"Winter Sale": "冬季特卖", "Spring Sale": "春季特卖", "Summer
 
 
 def steam_events():
-    t = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", fetch("https://partner.steamgames.com/doc/marketing/upcoming_events"))))
+    raw = fetch("https://partner.steamgames.com/doc/marketing/upcoming_events?l=english",
+                headers={"Accept-Language": "en-US,en;q=0.9"})
+    t = re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", raw)))
+    name_pat = r"((?:Steam )?[A-Z][A-Za-z' :&-]{2,60}?(?:Sale|Fest|Festival)(?: \d{4})?(?:: [A-Za-z]+ \d{4})?)"
+    # 两种日期写法：「17 December, 2026」或「December 17, 2026」
+    date_dm = r"(\d{1,2}) ([A-Z][a-z]+),? (\d{4})"
+    date_md = r"([A-Z][a-z]+) (\d{1,2}),? (\d{4})"
     out = []
-    pat = r"((?:Steam )?[A-Z][A-Za-z' :&-]{2,60}?(?:Sale|Fest|Festival)(?: \d{4})?(?:: [A-Za-z]+ \d{4})?) \| (\d{1,2}) ([A-Z][a-z]+),? (\d{4}) - (\d{1,2}) ([A-Z][a-z]+),? (\d{4})"
-    for m in re.finditer(pat, t):
-        name, d1, m1, y1, d2, m2, y2 = m.groups()
-        if m1 not in MONTHS or m2 not in MONTHS:
-            continue
-        cn = next((v for k, v in SALE_CN.items() if k in name), "")
-        out.append({"name": name.strip(), "cn": cn, "start": f"{y1}-{MONTHS[m1]:02d}-{int(d1):02d}",
-                    "end": f"{y2}-{MONTHS[m2]:02d}-{int(d2):02d}"})
+    for dp, order in ((date_dm, "dm"), (date_md, "md")):
+        for m in re.finditer(name_pat + r" \| " + dp + r" ?[-–] ?" + dp, t):
+            name, a1, b1, y1, a2, b2, y2 = m.groups()
+            (d1, m1), (d2, m2) = ((a1, b1), (a2, b2)) if order == "dm" else ((b1, a1), (b2, a2))
+            if m1 not in MONTHS or m2 not in MONTHS:
+                continue
+            cn = next((v for k, v in SALE_CN.items() if k in name), "")
+            out.append({"name": name.strip(), "cn": cn, "start": f"{y1}-{MONTHS[m1]:02d}-{int(d1):02d}",
+                        "end": f"{y2}-{MONTHS[m2]:02d}-{int(d2):02d}"})
     uniq = {(e["name"], e["start"]): e for e in out}
     if not uniq:
-        raise ValueError("empty")
+        # 诊断：把「Sale」附近的原文带进错误信息，便于看 Actions 上拿到的页面
+        i = t.find("Sale")
+        raise ValueError(f"empty, len={len(raw)}, near Sale: {t[max(0, i - 60):i + 80] if i >= 0 else t[:140]}")
     return sorted(uniq.values(), key=lambda e: e["start"])
 
 
@@ -241,7 +250,7 @@ def main():
             return v
         except Exception as e:
             prev = next((s for s in old.get("sources", []) if s["name"] == name), {})
-            sources.append({"name": name, "ok": False, "error": str(e)[:120], "updated": prev.get("updated")})
+            sources.append({"name": name, "ok": False, "error": str(e)[:300], "updated": prev.get("updated")})
             print("FAIL", name, e)
             return old.get(key)
 
