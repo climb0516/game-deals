@@ -116,6 +116,34 @@
     .hero-line .big { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
     .hero-line .big em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
+    /* PlayStation */
+    .ps-hero { padding: 16px 18px; margin-bottom: 4px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; background: linear-gradient(120deg, color-mix(in srgb, #0070d1 22%, var(--panel)), var(--panel)); }
+    .ps-hero .big { font-size: 24px; font-weight: 800; letter-spacing: -0.03em; }
+    .ps-hero .kv2 { display: flex; flex-direction: column; font-size: 12px; color: var(--text-3); }
+    .ps-hero .kv2 b { font-size: 18px; color: var(--text-1); }
+    .ps-plus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+    .ps-plus .img { aspect-ratio: 16/9; }
+    .ps-cat { display: grid; grid-auto-flow: column; grid-auto-columns: 168px; gap: 12px; overflow-x: auto; padding-bottom: 6px; }
+    .psgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: 12px; }
+    .psc { overflow: hidden; display: flex; flex-direction: column; min-width: 0; transition: transform .15s; }
+    .psc:hover { transform: translateY(-2px); }
+    .psc .cv { aspect-ratio: 1 / 1; background: var(--panel-2) center / cover no-repeat; position: relative; }
+    .psc .cv.wide { aspect-ratio: 16 / 9; }
+    .psc .cv:not([style*="url"])::before { content: "🎮"; position: absolute; inset: 0; display: grid; place-items: center; font-size: 40px; opacity: .35; }
+    .psc .off { position: absolute; left: 8px; top: 8px; font-size: 12px; font-weight: 800; padding: 2px 8px; border-radius: 6px; background: var(--accent); color: var(--accent-ink); }
+    .psc .tg { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; }
+    .psc .tg span { font-size: 10.5px; font-weight: 700; padding: 1px 6px; border-radius: 5px; background: rgba(0,0,0,.65); color: #fff; }
+    .psc .tg .plus { background: #f5b800; color: #2a1d00; }
+    .psc .tg .low { background: #ef4444; }
+    .psc .rk { position: absolute; left: 8px; bottom: 8px; font-size: 13px; font-weight: 800; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,.8); }
+    .psc .bd { padding: 9px 11px 11px; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .psc .nm { font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .psc .pr { display: flex; align-items: baseline; gap: 6px; font-size: 12.5px; flex-wrap: wrap; }
+    .psc .pr b { font-size: 15px; } .psc .pr s { color: var(--text-3); }
+    .psc .pp { font-size: 12px; color: #d9a400; font-weight: 600; }
+    .psc .en { font-size: 11.5px; color: var(--text-3); }
+    .psc .en.soon { color: var(--warn); font-weight: 700; }
+
     /* 列表行 */
     .list { overflow: hidden; }
     .gv { display: grid; grid-template-columns: 92px minmax(0,1fr) auto; gap: 14px; align-items: center; padding: 10px 14px; border-bottom: 1px solid var(--line); }
@@ -203,7 +231,8 @@
     <div class="topbar-inner">
       <div class="logo"><div class="logo-mark">🎁</div>喜加一<small>Game Deals</small></div>
       <div class="seg" id="viewSeg">
-        <button data-v="free" class="active">限免</button>
+        <button data-v="ps" class="active">🎮 PlayStation</button>
+        <button data-v="free">限免</button>
         <button data-v="steam">Steam 特惠</button>
         <button data-v="sales">大促日历</button>
         <button data-v="console">主机</button>
@@ -218,7 +247,8 @@
 
   <div class="layout">
     <main>
-      <section class="view active" id="view-free"></section>
+      <section class="view active" id="view-ps"></section>
+      <section class="view" id="view-free"></section>
       <section class="view" id="view-steam">
         <div class="filters" id="steamFilters"></div>
         <div class="deals" id="deals"></div>
@@ -256,11 +286,12 @@ const store = {
   set(k, v) { try { localStorage.setItem('gd.' + k, JSON.stringify(v)); } catch {} },
 };
 const SITE = 'https://climb0516.github.io/game-deals/';
-const VIEWS = ['free', 'steam', 'sales', 'console'];
+const VIEWS = ['ps', 'free', 'steam', 'sales', 'console'];
 
 let DATA = null;
 const state = {
-  view: VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : store.get('view', 'free'),
+  view: VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : store.get('view2', 'ps'),
+  psDeal: store.get('psDeal', 'hot'), psHot: store.get('psHot', 'top_sales'), psShown: 24,
   plat: 'all', loot: store.get('loot', false),
   price: store.get('price', 0), disc: store.get('disc', 0), rate: store.get('rate', 0),
   sort: store.get('sort', 'rank'), lowOnly: store.get('lowOnly', false), shown: 60,
@@ -363,7 +394,7 @@ function renderConsole() {
   const box = (p, title, note) => p ? `<a class="panel box" href="${esc(p.url)}" target="_blank" rel="noopener"><h4>${title} · ${esc(p.month)}</h4><div class="muted">${note} · 官方博客 ${p.date}</div>
       <ul>${p.games.map(g => `<li>${esc(g)}</li>`).join('')}${p.more ? '<li class="muted">更多见原文</li>' : ''}</ul></a>` : '';
   const cg = DATA.giveaways.filter(g => g.platforms.some(p => ['PlayStation', 'Xbox', 'Switch'].includes(p)));
-  $('#view-console').innerHTML = `<div class="section-title">PlayStation Plus<small>英文标题来自美区博客，港服内容基本一致</small></div>
+  $('#view-console').innerHTML = `<div class="section-title">PlayStation Plus（官方博客原文）<small>中文名、封面和港服优惠见「🎮 PlayStation」标签</small></div>
     <div class="cols">${box(mon, '每月游戏', '二档及以上会员免费领取')}${box(cat, '游戏目录', '高级 / 至尊会员可玩')}</div>
     <div class="section-title">Xbox Game Pass 最近新增<small>港区</small></div>
     <div class="panel box"><div class="gp-grid">${DATA.game_pass.map(g => `<a class="gp" href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.img)}?w=240" alt="" loading="lazy" onerror="this.style.visibility='hidden'"><span title="${esc(g.title)}">${esc(g.title)}</span></a>`).join('')}</div></div>
@@ -371,6 +402,72 @@ function renderConsole() {
     <div class="panel list">${cg.map(g => `<a class="gv" href="${esc(g.url)}" target="_blank" rel="noopener"><img src="${esc(g.img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
       <div class="t"><b>${esc(g.title)}</b><span>${g.platforms.map(p => `<span class="plat">${esc(p)}</span>`).join('')}</span></div>
       <div class="r">${g.end ? `剩 ${left(g.end)}` : '截止时间未知'}</div></a>`).join('') || '<div class="empty">暂无</div>'}</div>`;
+}
+
+// ── PlayStation 港服 ──
+const hk = v => v == null ? '' : 'HK$' + (Number.isInteger(v) ? v : v.toFixed(2));
+const ps = u => u ? `background-image:url('${esc(u).replace(/'/g, '%27')}')` : '';
+function psDealCard(x) {
+  const soon = x.end && ms(x.end) - Date.now() < 3 * 864e5;
+  const tags = [x.catalog ? '<span>游戏目录内</span>' : '', x.plus_price ? '<span class="plus">会员价</span>' : '', x.low ? '<span class="low">港服新低</span>' : '', x.trial ? '<span>可试玩</span>' : ''].join('');
+  return `<a class="panel psc" href="${esc(x.url)}" target="_blank" rel="noopener">
+    <div class="cv" style="${ps(x.cover)}">${x.pct ? `<span class="off">-${x.pct}%</span>` : ''}<span class="tg">${tags}</span></div>
+    <div class="bd"><div class="nm" title="${esc(x.name)}">${esc(x.name)}</div>
+      <div class="pr"><b class="num">${hk(x.price)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s>` : ''}</div>
+      ${x.plus_price ? `<div class="pp num">会员 ${hk(x.plus_price)}</div>` : ''}
+      ${x.end ? `<div class="en ${soon ? 'soon' : ''}">${soon ? '剩 ' + left(x.end) : '截止 ' + mdhm(x.end)}</div>` : ''}
+    </div></a>`;
+}
+function psHotCard(x, i) {
+  return `<a class="panel psc" href="${esc(x.url)}" target="_blank" rel="noopener">
+    <div class="cv" style="${ps(x.cover)}"><span class="rk">#${i + 1}</span></div>
+    <div class="bd"><div class="nm" title="${esc(x.name)}">${esc(x.name)}</div></div></a>`;
+}
+// 官方 PS Plus 页面的图打不开时，按名字从港服商店数据里借一张封面
+function psCover(name) {
+  const P = DATA.ps_hk || {}, key = (name || '').replace(/[\s：:·™®]/g, '').slice(0, 4);
+  if (!key) return '';
+  const all = [...(P.deals || []), ...(P.top_sales || []), ...(P.top_downloads || []), ...(P.new_hot || [])];
+  return (all.find(x => x.cover && (x.name || '').replace(/[\s：:·™®]/g, '').includes(key)) || {}).cover || '';
+}
+function renderPs() {
+  const P = DATA.ps_hk || {}, plus = DATA.ps_plus_hk || {}, deals = P.deals || [];
+  if (!deals.length && !plus.monthly) { $('#view-ps').innerHTML = '<div class="panel empty">港服数据还没抓到，稍后再看</div>'; return; }
+  const filters = [
+    ['hot', '🔥 热销优惠', deals.filter(x => x.pct > 0)],
+    ['big', '💥 折扣最大', deals.filter(x => x.pct >= 50).sort((a, b) => b.pct - a.pct)],
+    ['plus', '➕ 会员专享价', deals.filter(x => x.plus_price)],
+    ['catalog', '📚 游戏目录内', deals.filter(x => x.catalog)],
+    ['soon', '⏰ 即将结束', deals.filter(x => x.end && ms(x.end) - Date.now() < 3 * 864e5).sort((a, b) => a.end.localeCompare(b.end))],
+    ['low', '📉 港服新低', deals.filter(x => x.low)],
+  ];
+  const cur = filters.find(f => f[0] === state.psDeal) || filters[0], list = cur[2], shown = list.slice(0, state.psShown);
+  const hots = [['top_sales', '畅销（30 天）'], ['top_downloads', '最多下载'], ['new_hot', '新游戏热门'], ['f2p', '免费游玩']];
+  const hotList = P[state.psHot] || [];
+  const mon = plus.monthly || [], cat = plus.catalog || [];
+  $('#view-ps').innerHTML = `
+    <div class="panel ps-hero"><div class="big">港服 PlayStation</div>
+      <div class="kv2"><span>当前优惠</span><b class="num">${deals.filter(x => x.pct > 0).length} 款</b></div>
+      <div class="kv2"><span>会员专享价</span><b class="num">${deals.filter(x => x.plus_price).length} 款</b></div>
+      <div class="kv2"><span>本月会员游戏</span><b class="num">${mon.length} 款</b></div>
+      <div class="kv2"><span>目录新增</span><b class="num">${cat.length} 款</b></div></div>
+
+    <div class="section-title">🎁 本月会员免费游戏<small>PS Plus 基础及以上会员可领取 · 官方港服页面</small></div>
+    <div class="ps-plus">${mon.map(g => `<a class="panel epic" href="${esc(g.url || 'https://www.playstation.com/zh-hans-hk/ps-plus/whats-new/')}" target="_blank" rel="noopener">
+      <div class="img" style="${ps(g.img)}"><span class="badge">会员免费</span></div><div class="body"><b>${esc(g.name)}</b></div></a>`).join('') || '<div class="panel empty">暂无</div>'}</div>
+
+    ${cat.length ? `<div class="section-title">📚 游戏目录本月新增<small>升级 / 高级会员可玩</small></div>
+    <div class="ps-cat">${cat.map(g => `<a class="panel psc" href="${esc(g.url || 'https://www.playstation.com/zh-hans-hk/ps-plus/whats-new/')}" target="_blank" rel="noopener"><div class="cv" style="${ps(g.img || psCover(g.name))}"></div><div class="bd"><div class="nm" title="${esc(g.name)}">${esc(g.name)}</div></div></a>`).join('')}</div>` : ''}
+
+    <div class="section-title">💸 港服优惠<small>按 30 天销量排序 · 价格为港币 · 点卡片去 PS Store</small></div>
+    <div class="filters">${filters.map(([k, n, l]) => `<button class="chip ${k === cur[0] ? 'active' : ''}" data-psdeal="${k}">${n}<small>${l.length}</small></button>`).join('')}</div>
+    <div class="psgrid">${shown.map(psDealCard).join('') || '<div class="panel empty" style="grid-column:1/-1">暂无</div>'}</div>
+    ${list.length > shown.length ? `<div style="text-align:center;margin-top:14px"><button class="btn" id="psMore">再看 24 款（共 ${list.length}）</button></div>` : ''}
+    ${state.psDeal === 'low' && !list.length ? '<div class="muted" style="margin-top:8px">港服价格从今天开始记录，满 7 天后才会标出新低。</div>' : ''}
+
+    <div class="section-title">🔥 港服热门<small>PS Store 官方排序</small></div>
+    <div class="filters">${hots.map(([k, n]) => `<button class="chip ${k === state.psHot ? 'active' : ''}" data-pshot="${k}">${n}</button>`).join('')}</div>
+    <div class="psgrid">${hotList.map(psHotCard).join('') || '<div class="panel empty" style="grid-column:1/-1">暂无</div>'}</div>`;
 }
 
 // ── 侧栏 ──
@@ -394,7 +491,7 @@ function renderAside() {
 function render() {
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === state.view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + state.view));
-  ({ free: renderFree, steam: renderSteam, sales: renderSales, console: renderConsole })[state.view]();
+  ({ ps: renderPs, free: renderFree, steam: renderSteam, sales: renderSales, console: renderConsole })[state.view]();
   renderAside();
 }
 
@@ -405,10 +502,13 @@ function toast(msg) {
 
 document.addEventListener('click', ev => {
   let b;
-  if ((b = ev.target.closest('#viewSeg button'))) { state.view = b.dataset.v; store.set('view', state.view); history.replaceState(null, '', '#' + state.view); render(); scrollTo(0, 0); }
+  if ((b = ev.target.closest('#viewSeg button'))) { state.view = b.dataset.v; store.set('view2', state.view); history.replaceState(null, '', '#' + state.view); render(); scrollTo(0, 0); }
   else if ((b = ev.target.closest('[data-plat]'))) { state.plat = b.dataset.plat; renderFree(); }
   else if ((b = ev.target.closest('[data-loot]'))) { state.loot = b.dataset.loot === '1'; state.plat = 'all'; store.set('loot', state.loot); renderFree(); }
   else if ((b = ev.target.closest('#moreDeals'))) { state.shown += 60; renderSteam(); }
+  else if ((b = ev.target.closest('[data-psdeal]'))) { state.psDeal = b.dataset.psdeal; state.psShown = 24; store.set('psDeal', state.psDeal); renderPs(); }
+  else if ((b = ev.target.closest('[data-pshot]'))) { state.psHot = b.dataset.pshot; store.set('psHot', state.psHot); renderPs(); }
+  else if ((b = ev.target.closest('#psMore'))) { state.psShown += 24; renderPs(); }
 });
 document.addEventListener('change', ev => {
   const t = ev.target, map = { fSort: 'sort', fPrice: 'price', fDisc: 'disc', fRate: 'rate' };

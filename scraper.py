@@ -174,6 +174,167 @@ def steam_events():
 
 
 # ── PS Plus：官方博客 RSS 里的每月游戏 / 游戏目录 ─────────
+# ── PlayStation 港服：官方商店 GraphQL（带港服 locale 头）+ PS Plus 官方中文页 ──────────
+# 只接受前端白名单里的 persisted query；hash 失效时会报 PersistedQueryNotFound，让来源状态变红提醒更新
+PS_GQL = "https://web.np.playstation.com/api/graphql/v1/op"
+PS_HEAD = {"x-psn-store-locale-override": "zh-hans-hk", "content-type": "application/json", "Origin": "https://store.playstation.com", "Referer": "https://store.playstation.com/"}
+PS_HASH = {
+    "categoryGridRetrieve": ["4ce7d410a4db2c8b635a48c1dcec375906ff63b19dadd87e073f8fd0c0481d35",
+                             "257713466fc3264850aa473409a29088e3a4115e6e69e9fb3e061c8dd5b9f5c6"],
+    "productRetrieveForCtasWithPrice": ["8532da7eda369efdad054ca8f885394a2d0c22d03c5259a422ae2bb3b98c5c99"],
+}
+PS_CAT = {                                   # 港服常驻分类（活动分类会轮换，不用）
+    "deals": "3f772501-f6f8-49b7-abac-874a88ca4897",     # 全部优惠
+    "ps5": "d0446d4b-dc9a-4f1e-86ec-651f099c9b29",       # 全部 PS5 游戏
+    "new": "e1699f77-77e1-43ca-a296-26d08abacb0f",       # 新游戏
+    "f2p": "4dfd67ab-4ed7-40b0-a937-a549aece13d0",       # 免费游玩
+}
+PS_STORE = "https://store.playstation.com/zh-hans-hk"
+PS_DEALS_N = 300                             # 优惠按 30 天销量取前 300
+PS_ENRICH_N = 60                             # 其中前 60 个补截止时间 / 会员价 / 是否在游戏目录
+
+
+def ps_gql(op, variables):
+    err = None
+    for h in PS_HASH[op]:
+        q = urllib.parse.urlencode({"operationName": op, "variables": json.dumps(variables, ensure_ascii=False),
+                                    "extensions": json.dumps({"persistedQuery": {"version": 1, "sha256Hash": h}})})
+        d = json.loads(fetch(f"{PS_GQL}?{q}", timeout=40, headers=PS_HEAD))
+        if d.get("data"):
+            return d["data"]
+        err = (d.get("errors") or [{}])[0].get("message", "no data")
+    raise RuntimeError(f"{op}: {err}")
+
+
+def ps_grid(cat, size, sort="sales30", filters=None):
+    v = {"id": PS_CAT[cat], "pageArgs": {"size": size, "offset": 0}, "sortBy": {"name": sort, "isAscending": False},
+         "filterBy": filters or [], "facetOptions": []}
+    return ps_gql("categoryGridRetrieve", v)["categoryGridRetrieve"]
+
+
+def ps_cover(media, prefer=("GAMEHUB_COVER_ART", "MASTER", "FOUR_BY_THREE_BANNER", "PORTRAIT_BANNER")):
+    by = {m.get("role"): m.get("url") for m in media or [] if m.get("type", "IMAGE") == "IMAGE"}
+    u = next((by[r] for r in prefer if by.get(r)), "")
+    return (u + "?w=440&thumb=false") if u else ""
+
+
+def ps_name(n):
+    # 去掉「(日语, 韩语, 简体中文…)」这类语言后缀
+    return re.sub(r"\s*[（(][^()（）]*(?:语|文)[^()（）]*[)）]\s*$", "", n or "").strip()
+
+
+def money(s):
+    m = re.search(r"[\d,]+(?:\.\d+)?", s or "")
+    return float(m.group().replace(",", "")) if m else None
+
+
+def ps_product(p):
+    pr = p.get("price") or {}
+    pct = re.search(r"-?(\d+)%", pr.get("discountText") or "")
+    return {
+        "id": p["id"], "name": ps_name(p.get("name")), "platforms": p.get("platforms") or [],
+        "base": money(pr.get("basePrice")), "price": money(pr.get("discountedPrice")), "pct": int(pct.group(1)) if pct else 0,
+        "free": bool(pr.get("isFree")), "plus_only": "PS_PLUS" in (pr.get("serviceBranding") or []),
+        "cover": ps_cover(p.get("media")), "url": f"{PS_STORE}/product/{p['id']}",
+    }
+
+
+def ps_concept(c):
+    return {"id": c["id"], "name": ps_name(c.get("name")), "cover": ps_cover(c.get("media")),
+            "url": f"{PS_STORE}/concept/{c['id']}", "product": (c.get("products") or [{}])[0].get("id")}
+
+
+def ps_enrich(item):
+    """单个商品的购买按钮信息：普通折扣截止时间、PS Plus 会员价、是否在 Extra / Premium 游戏目录、能否试玩。"""
+    d = ps_gql("productRetrieveForCtasWithPrice", {"productId": item["id"]})["productRetrieve"] or {}
+    for cta in d.get("webctas") or []:
+        pr, t = cta.get("price") or {}, cta.get("type")
+        if t == "ADD_TO_CART" and pr.get("endTime"):
+            item["end"] = datetime.fromtimestamp(int(pr["endTime"]) / 1000, CST).isoformat(timespec="minutes")
+        elif t == "UPSELL_PS_PLUS_DISCOUNT":
+            item["plus_price"] = (pr.get("discountedValue") or 0) / 100
+            if pr.get("endTime"):
+                item.setdefault("end", datetime.fromtimestamp(int(pr["endTime"]) / 1000, CST).isoformat(timespec="minutes"))
+        elif t == "UPSELL_PS_PLUS_GAME_CATALOG":
+            item["catalog"] = True
+        elif t == "UPSELL_PS_PLUS_TRIAL":
+            item["trial"] = True
+
+
+def ps_hk(prev_enriched):
+    """返回港服 PS 数据：优惠（按 30 天销量）、畅销、最多下载、新游戏热门、免费游玩。"""
+    deals = [ps_product(p) for p in ps_grid("deals", PS_DEALS_N, filters=["storeDisplayClassification:FULL_GAME"])["products"]]
+    deals = [x for x in deals if x["base"] and x["price"] is not None]
+    # 补截止时间等：每天每个商品只查一次（同一天沿用上次的结果）
+    for x in deals[:PS_ENRICH_N]:
+        old = prev_enriched.get(x["id"])
+        if old and old.get("_day") == datetime.now(CST).date().isoformat():
+            x.update({k: v for k, v in old.items() if k in ("end", "plus_price", "catalog", "trial", "_day")})
+            continue
+        try:
+            ps_enrich(x)
+            x["_day"] = datetime.now(CST).date().isoformat()
+        except Exception as e:
+            print("  ps enrich fail", x["name"][:20], e)
+        time.sleep(0.25)
+    out = {"deals": deals}
+    for key, cat, sort in (("top_sales", "ps5", "sales30"), ("top_downloads", "ps5", "downloads30"),
+                           ("new_hot", "new", "sales30"), ("f2p", "f2p", "downloads30")):
+        g = ps_grid(cat, 24, sort)
+        out[key] = [ps_concept(c) for c in g.get("concepts") or []] or [ps_product(p) for p in g.get("products") or []]
+        time.sleep(0.3)
+    return out
+
+
+def ps_plus_hk():
+    """PS Plus 官方港服中文页：本月会员免费游戏（Essential）、游戏目录本月新增（Extra / Premium），带配图。"""
+    t = fetch("https://www.playstation.com/zh-hans-hk/ps-plus/whats-new/", timeout=40)
+    clean_ = lambda s: html.unescape(re.sub(r"<[^>]+>", "", s)).strip()
+    heads = [(m.start(), clean_(m.group(1))) for m in re.finditer(r"<h2[^>]*>(.*?)</h2>", t, re.S)]
+
+    def section(title):
+        starts = [i for i, h in heads if title in h]
+        if not starts:
+            return ""
+        i = starts[0]
+        nxt = min([j for j, h in heads if j > i and title not in h] or [len(t)])
+        return t[i:nxt]
+
+    def ok_img(u):
+        try:
+            req = urllib.request.Request(u, method="HEAD", headers={"User-Agent": UA})
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return r.status == 200
+        except Exception:
+            return False
+
+    def img_near(seg, pos, slug=""):
+        # 离标题最近、能打开、并且文件名对得上这个游戏的那张；对不上宁可不要（不拿隔壁游戏的图顶替）
+        imgs = sorted({(abs(m.start() - pos), m.group(1)) for m in re.finditer(r"(https://gmedia\.playstation\.com/is/image/SIEPDC/[^\"\s?$]+)", seg)})
+        key = "-".join(slug.strip("/").split("/")[-1].split("-")[:2]) if slug else ""
+        for _, u in [x for x in imgs if "badge" not in x[1] and (not key or key in x[1])][:3]:
+            if ok_img(u + "?$800px$"):
+                return u + "?$800px$"
+        return ""
+
+    monthly = []
+    seg = section("每月游戏")
+    for m in re.finditer(r'<h3 class="txt-style-medium-title[^"]*"[^>]*>(.*?)</h3>', seg, re.S):
+        link = re.search(r'href="(/zh-hans-hk/games/[^"]+)"', seg[m.end():m.end() + 3000])
+        monthly.append({"name": clean_(m.group(1)), "img": img_near(seg, m.start(), link.group(1) if link else ""),
+                        "url": "https://www.playstation.com" + link.group(1) if link else ""})
+    catalog = []
+    seg = section("游戏目录最新阵容")
+    for m in re.finditer(r'<h5 class="txt-style-subtitle-bold txt-block-utility__title"[^>]*>(.*?)</h5>', seg, re.S):
+        links = re.findall(r'href="(/zh-hans-hk/games/[^"]+)"', seg[max(0, m.start() - 4000):m.start()])
+        slug = links[-1] if links else ""                     # 标题前最近的那个游戏链接
+        catalog.append({"name": clean_(m.group(1)), "img": img_near(seg, m.start(), slug),
+                        "url": "https://www.playstation.com" + slug if slug else ""})
+    if not monthly:
+        raise RuntimeError("没解析到本月会员游戏")
+    return {"monthly": monthly, "catalog": catalog}
+
+
 def ps_plus():
     t = fetch("https://blog.playstation.com/tag/playstation-plus/feed/")
     out = []
@@ -261,6 +422,10 @@ def main():
     lows = run("CheapShark 美区史低", lambda: cheapshark_lows(st, cs_cache), "_lows") or {}
     ev = run("Steam 大促日历", steam_events, "events") or []
     ps = run("PS Plus 博客", ps_plus, "ps_plus") or []
+    prev_ps = old.get("ps_hk") or {}
+    prev_enr = {x["id"]: x for x in prev_ps.get("deals", []) if x.get("_day")}
+    pshk = run("PS 港服商店", lambda: ps_hk(prev_enr), "ps_hk", count=lambda v: len(v["deals"])) or {}
+    psplus = run("PS Plus 港服", ps_plus_hk, "ps_plus_hk", count=lambda v: len(v["monthly"]) + len(v["catalog"])) or {}
     gpass = run("Xbox Game Pass", game_pass, "game_pass") or []
 
     # 国区价格历史：每天保留当天最后一次价格（appid -> {date: price}），用来判断「国区近 N 天最低」
@@ -272,6 +437,18 @@ def main():
     live = {str(g["appid"]) for g in st}
     hist = {k: {d: p for d, p in v.items() if d >= cutoff} for k, v in hist.items()}
     hist = {k: v for k, v in hist.items() if v and (k in live or max(v) >= (now.date() - timedelta(days=30)).isoformat())}
+
+    # 港服 PS 价格历史（商品 id -> {date: 当前价}），记满 7 天后才判断「港服新低」
+    ps_hist = old.get("ps_price_history", {})
+    for x in pshk.get("deals", []):
+        ps_hist.setdefault(x["id"], {})[today] = x["price"]
+    ps_live = {x["id"] for x in pshk.get("deals", [])}
+    ps_hist = {k: {d: p for d, p in v.items() if d >= cutoff} for k, v in ps_hist.items()}
+    ps_hist = {k: v for k, v in ps_hist.items() if v and (k in ps_live or max(v) >= (now.date() - timedelta(days=30)).isoformat())}
+    for x in pshk.get("deals", []):
+        h = ps_hist.get(x["id"], {})
+        x["days"] = len(h)
+        x["low"] = bool(len(h) >= 7 and x["price"] <= min(h.values()))
 
     for g in st:
         lo = lows.get(str(g["appid"]))
@@ -288,6 +465,8 @@ def main():
         "steam": st,
         "events": ev,
         "ps_plus": ps,
+        "ps_hk": pshk,
+        "ps_plus_hk": psplus,
         "game_pass": gpass,
         "summary": {                    # 给 pages-dashboard 用，字段只增不减
             "epic_now": [g["title"] for g in ep if g["kind"] == "now"],
@@ -296,11 +475,14 @@ def main():
             "epic_next": [g["title"] for g in ep if g["kind"] == "next"],
             "giveaway_games": sum(1 for g in gp if g["type"] == "game"),
             "steam_lows": sum(1 for g in st if g["usd_low"] or g["cn_low"]),
+            "ps_deals": len(pshk.get("deals", [])),
+            "ps_plus_monthly": [g["name"] for g in psplus.get("monthly", [])],
             "next_sale": next(({"name": e["cn"] or e["name"], "start": e["start"], "end": e["end"]} for e in ev if e["end"] >= today), None),
         },
         "_lows": lows,
         "_cs_ids": cs_cache,
         "price_history": hist,
+        "ps_price_history": ps_hist,
         "sources": sources,
     }
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
