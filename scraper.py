@@ -182,16 +182,21 @@ PS_HASH = {
     "categoryGridRetrieve": ["4ce7d410a4db2c8b635a48c1dcec375906ff63b19dadd87e073f8fd0c0481d35",
                              "257713466fc3264850aa473409a29088e3a4115e6e69e9fb3e061c8dd5b9f5c6"],
     "productRetrieveForCtasWithPrice": ["8532da7eda369efdad054ca8f885394a2d0c22d03c5259a422ae2bb3b98c5c99"],
+    "metGetConceptById": ["cc90404ac049d935afbd9968aef523da2b6723abfb9d586e5f77ebf7c5289006"],
+    "metGetPricingDataByConceptId": ["abcb311ea830e679fe2b697a27f755764535d825b24510ab1239a4ca3092bd09"],
 }
 PS_CAT = {                                   # 港服常驻分类（活动分类会轮换，不用）
     "deals": "3f772501-f6f8-49b7-abac-874a88ca4897",     # 全部优惠
     "ps5": "d0446d4b-dc9a-4f1e-86ec-651f099c9b29",       # 全部 PS5 游戏
     "new": "e1699f77-77e1-43ca-a296-26d08abacb0f",       # 新游戏
     "f2p": "4dfd67ab-4ed7-40b0-a937-a549aece13d0",       # 免费游玩
+    "preorder": "3bf499d7-7acf-4931-97dd-2667494ee2c9",  # 预购
 }
 PS_STORE = "https://store.playstation.com/zh-hans-hk"
-PS_DEALS_N = 300                             # 优惠按 30 天销量取前 300
-PS_ENRICH_N = 60                             # 其中前 60 个补截止时间 / 会员价 / 是否在游戏目录
+PS_DEALS_N = 600                             # 优惠按 30 天销量取前 600
+PS_ENRICH_N = 120                            # 其中前 120 个补截止时间 / 会员价 / 是否在游戏目录 / 详情
+PS_LIST_N = 48                               # 畅销、下载、免费游玩、新游戏各取 48
+PS_DETAIL_DAYS = 30                          # 游戏详情（发售日、发行商、截图…）缓存天数，价格每天更新
 
 
 def ps_gql(op, variables):
@@ -228,25 +233,35 @@ def money(s):
     return float(m.group().replace(",", "")) if m else None
 
 
+def has_zh(name):
+    return bool(re.search(r"中文|中英|中日|中韩|简体|繁体|中文版", name or ""))
+
+
+def ps_shots(media, n=6):
+    return [m["url"] + "?w=960&thumb=false" for m in media or [] if m.get("role") == "SCREENSHOT" and m.get("type", "IMAGE") == "IMAGE"][:n]
+
+
 def ps_product(p):
     pr = p.get("price") or {}
     pct = re.search(r"-?(\d+)%", pr.get("discountText") or "")
     return {
-        "id": p["id"], "name": ps_name(p.get("name")), "platforms": p.get("platforms") or [],
+        "id": p["id"], "name": ps_name(p.get("name")), "zh": has_zh(p.get("name")), "platforms": p.get("platforms") or [],
         "base": money(pr.get("basePrice")), "price": money(pr.get("discountedPrice")), "pct": int(pct.group(1)) if pct else 0,
         "free": bool(pr.get("isFree")), "plus_only": "PS_PLUS" in (pr.get("serviceBranding") or []),
-        "cover": ps_cover(p.get("media")), "url": f"{PS_STORE}/product/{p['id']}",
+        "preorder": any(s.get("type") == "PREORDER" for s in p.get("skus") or []),
+        "cover": ps_cover(p.get("media")), "shots": ps_shots(p.get("media"), 4), "url": f"{PS_STORE}/product/{p['id']}",
     }
 
 
 def ps_concept(c):
-    return {"id": c["id"], "name": ps_name(c.get("name")), "cover": ps_cover(c.get("media")),
-            "url": f"{PS_STORE}/concept/{c['id']}", "product": (c.get("products") or [{}])[0].get("id")}
+    return {"cid": c["id"], "id": (c.get("products") or [{}])[0].get("id"), "name": ps_name(c.get("name")),
+            "cover": ps_cover(c.get("media")), "shots": ps_shots(c.get("media"), 4), "url": f"{PS_STORE}/concept/{c['id']}"}
 
 
 def ps_enrich(item):
-    """单个商品的购买按钮信息：普通折扣截止时间、PS Plus 会员价、是否在 Extra / Premium 游戏目录、能否试玩。"""
+    """单个商品的购买按钮信息：普通折扣截止时间、PS Plus 会员价、是否在 Extra / Premium 游戏目录、能否试玩、所属 concept。"""
     d = ps_gql("productRetrieveForCtasWithPrice", {"productId": item["id"]})["productRetrieve"] or {}
+    item["cid"] = (d.get("concept") or {}).get("id") or item.get("cid")
     for cta in d.get("webctas") or []:
         pr, t = cta.get("price") or {}, cta.get("type")
         if t == "ADD_TO_CART" and pr.get("endTime"):
@@ -261,28 +276,127 @@ def ps_enrich(item):
             item["trial"] = True
 
 
-def ps_hk(prev_enriched):
-    """返回港服 PS 数据：优惠（按 30 天销量）、畅销、最多下载、新游戏热门、免费游玩。"""
+def ps_detail(cid):
+    """游戏详情：英文名、发售日、发行商、类型、人数、简介、截图。"""
+    c = ps_gql("metGetConceptById", {"conceptId": cid, "productId": ""})["conceptRetrieve"] or {}
+    dp = c.get("defaultProduct") or {}
+    notes = {n.get("type"): n.get("value") for n in dp.get("compatibilityNotices") or []}
+    desc = next((x["value"] for x in dp.get("descriptions") or [] if x.get("type") == "SHORT"), "") or \
+        next((x["value"] for x in dp.get("descriptions") or [] if x.get("type") == "LONG"), "")
+    rel = (c.get("releaseDate") or {}).get("value") or dp.get("releaseDate")
+    return {
+        "en": c.get("invariantName") or "", "release": utc_iso(rel)[:10] if rel and utc_iso(rel) else "",
+        "publisher": c.get("publisherName") or dp.get("publisherName") or "",
+        "genres": [g["value"] for g in (c.get("combinedLocalizedGenres") or dp.get("combinedLocalizedGenres") or [])][:3],
+        "players": notes.get("NO_OF_PLAYERS") or "", "online": notes.get("ONLINE_PLAY_MODE") or "",
+        "desc": re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", desc)))[:220].strip(),
+        "zh_d": has_zh(dp.get("name")), "shots_d": ps_shots(c.get("media") or dp.get("media"), 6),
+        "_d": datetime.now(CST).date().isoformat(),
+    }
+
+
+def ps_price(cid):
+    """concept 的默认商品价格（列表里的 concept 本身不带价格）。"""
+    c = ps_gql("metGetPricingDataByConceptId", {"conceptId": cid})["conceptRetrieve"] or {}
+    dp = c.get("defaultProduct") or {}
+    pr = dp.get("price") or {}
+    pct = re.search(r"-?(\d+)%", pr.get("discountText") or "")
+    pre = any((x.get("meta") or {}).get("preOrder") for x in dp.get("mobilectas") or [])
+    end = next(((x.get("price") or {}).get("endTime") for x in dp.get("mobilectas") or [] if (x.get("price") or {}).get("endTime")), None)
+    return {"id": dp.get("id"), "base": (pr.get("basePriceValue") or 0) / 100 if pr.get("basePriceValue") is not None else money(pr.get("basePrice")),
+            "price": (pr.get("discountedValue") or 0) / 100 if pr.get("discountedValue") is not None else money(pr.get("discountedPrice")),
+            "pct": int(pct.group(1)) if pct else 0, "free": bool(pr.get("isFree")), "preorder": pre,
+            "end": datetime.fromtimestamp(int(end) / 1000, CST).isoformat(timespec="minutes") if end else None,
+            "_d": datetime.now(CST).date().isoformat()}
+
+
+def ps_hk(prev, cache):
+    """港服 PS：优惠（按 30 天销量）、畅销、最多下载、免费游玩、新游戏、预购；
+    cache = {"detail": {cid: 详情}, "price": {cid: 价格}}，详情 30 天、价格 1 天内沿用，避免每次几百个请求。"""
+    today = datetime.now(CST).date().isoformat()
+    det, prc = cache.setdefault("detail", {}), cache.setdefault("price", {})
+    stale = (datetime.now(CST).date() - timedelta(days=PS_DETAIL_DAYS)).isoformat()
+
+    def detail(cid):
+        if not cid:
+            return {}
+        if cid not in det or det[cid].get("_d", "") < stale:
+            try:
+                det[cid] = ps_detail(cid)
+                time.sleep(0.2)
+            except Exception as e:
+                print("  ps detail fail", cid, e)
+                return det.get(cid, {})
+        return det[cid]
+
+    def merge(x):
+        d = detail(x.get("cid"))
+        x.update({k: v for k, v in d.items() if k in ("en", "release", "publisher", "genres", "players", "online", "desc")})
+        x["zh"] = x.get("zh") or d.get("zh_d", False)
+        if len(d.get("shots_d") or []) > len(x.get("shots") or []):
+            x["shots"] = d["shots_d"]
+        return x
+
     deals = [ps_product(p) for p in ps_grid("deals", PS_DEALS_N, filters=["storeDisplayClassification:FULL_GAME"])["products"]]
     deals = [x for x in deals if x["base"] and x["price"] is not None]
-    # 补截止时间等：每天每个商品只查一次（同一天沿用上次的结果）
     for x in deals[:PS_ENRICH_N]:
-        old = prev_enriched.get(x["id"])
-        if old and old.get("_day") == datetime.now(CST).date().isoformat():
-            x.update({k: v for k, v in old.items() if k in ("end", "plus_price", "catalog", "trial", "_day")})
-            continue
-        try:
-            ps_enrich(x)
-            x["_day"] = datetime.now(CST).date().isoformat()
-        except Exception as e:
-            print("  ps enrich fail", x["name"][:20], e)
-        time.sleep(0.25)
+        old = prev.get(x["id"])
+        if old and old.get("_day") == today:          # 同一天已查过购买信息，沿用
+            x.update({k: v for k, v in old.items() if k in ("end", "plus_price", "catalog", "trial", "_day", "cid")})
+        else:
+            try:
+                ps_enrich(x)
+                x["_day"] = today
+            except Exception as e:
+                print("  ps enrich fail", x["name"][:20], e)
+            time.sleep(0.2)
+        merge(x)
     out = {"deals": deals}
-    for key, cat, sort in (("top_sales", "ps5", "sales30"), ("top_downloads", "ps5", "downloads30"),
-                           ("new_hot", "new", "sales30"), ("f2p", "f2p", "downloads30")):
-        g = ps_grid(cat, 24, sort)
-        out[key] = [ps_concept(c) for c in g.get("concepts") or []] or [ps_product(p) for p in g.get("products") or []]
+    by_id = {x["id"]: x for x in deals}
+
+    def concept_list(cat, sort):
+        g = ps_grid(cat, PS_LIST_N, sort)
+        items = [ps_concept(c) for c in g.get("concepts") or []] or [dict(ps_product(p), cid=None) for p in g.get("products") or []]
+        for x in items:
+            if x.get("cid"):
+                if x["cid"] not in prc or prc[x["cid"]].get("_d") != today:
+                    try:
+                        prc[x["cid"]] = ps_price(x["cid"])
+                        time.sleep(0.2)
+                    except Exception as e:
+                        print("  ps price fail", x["cid"], e)
+                p_ = prc.get(x["cid"], {})
+                x.update({k: v for k, v in p_.items() if k in ("base", "price", "pct", "free", "preorder", "end")})
+                x["id"] = p_.get("id") or x["id"]
+            elif x.get("id") in by_id:
+                x["cid"] = by_id[x["id"]].get("cid")
+            sale = by_id.get(x.get("id"))                 # 同一商品在优惠里：带上会员价 / 目录 / 截止时间
+            if sale:
+                x.update({k: sale[k] for k in ("plus_price", "catalog", "trial", "end", "pct", "price", "base") if sale.get(k) is not None})
+            merge(x)
         time.sleep(0.3)
+        return items
+
+    for key, cat, sort in (("top_sales", "ps5", "sales30"), ("top_downloads", "ps5", "downloads30"), ("f2p", "f2p", "downloads30"),
+                           ("new_release", "new", "productReleaseDate"), ("new_hot", "new", "sales30")):
+        out[key] = concept_list(cat, sort)
+    # 预购：分类里直接是商品（带价格），按发售日从近到远
+    pre = [ps_product(p) for p in ps_grid("preorder", PS_LIST_N, "productReleaseDate")["products"]]
+    for x in pre:
+        if x["id"] in prev and prev[x["id"]].get("cid"):
+            x["cid"] = prev[x["id"]]["cid"]
+        else:
+            try:
+                ps_enrich(x)
+                time.sleep(0.2)
+            except Exception as e:
+                print("  ps enrich fail", x["name"][:20], e)
+        merge(x)
+    out["preorder"] = sorted(pre, key=lambda x: x.get("release") or "9999")
+    # 缓存只留最近 60 天用到的
+    keep = {x.get("cid") for l in out.values() for x in l if x.get("cid")}
+    cache["detail"] = {k: v for k, v in det.items() if k in keep or v.get("_d", "") >= stale}
+    cache["price"] = {k: v for k, v in prc.items() if k in keep}
     return out
 
 
@@ -423,8 +537,9 @@ def main():
     ev = run("Steam 大促日历", steam_events, "events") or []
     ps = run("PS Plus 博客", ps_plus, "ps_plus") or []
     prev_ps = old.get("ps_hk") or {}
-    prev_enr = {x["id"]: x for x in prev_ps.get("deals", []) if x.get("_day")}
-    pshk = run("PS 港服商店", lambda: ps_hk(prev_enr), "ps_hk", count=lambda v: len(v["deals"])) or {}
+    prev_enr = {x["id"]: x for l in prev_ps.values() if isinstance(l, list) for x in l if x.get("id")}
+    ps_cache = old.get("_ps_cache") or {}
+    pshk = run("PS 港服商店", lambda: ps_hk(prev_enr, ps_cache), "ps_hk", count=lambda v: len(v["deals"])) or {}
     psplus = run("PS Plus 港服", ps_plus_hk, "ps_plus_hk", count=lambda v: len(v["monthly"]) + len(v["catalog"])) or {}
     gpass = run("Xbox Game Pass", game_pass, "game_pass") or []
 
@@ -483,6 +598,7 @@ def main():
         "_cs_ids": cs_cache,
         "price_history": hist,
         "ps_price_history": ps_hist,
+        "_ps_cache": ps_cache,
         "sources": sources,
     }
     DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
