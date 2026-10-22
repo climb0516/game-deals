@@ -116,20 +116,49 @@
     .hero-line .big { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; }
     .hero-line .big em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
 
-    /* PlayStation（Jump 式） */
-    .jtabs { display: flex; gap: 22px; border-bottom: 1px solid var(--line); margin-bottom: 12px; overflow-x: auto; }
-    .jtabs button { font-size: 18px; font-weight: 700; color: var(--text-3); padding: 6px 0 10px; white-space: nowrap; border-bottom: 2px solid transparent; }
-    .jtabs button.on { color: var(--text-1); border-color: var(--text-1); }
-    .jbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
-    .jsubs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
-    .jsubs button { padding: 5px 12px; border-radius: 8px; background: var(--hover); color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
-    .jsubs button.on { background: var(--text-1); color: var(--bg); }
-    .jsubs small { opacity: .6; margin-left: 4px; font-weight: 500; }
+    /* PlayStation 首页：每个栏目一种卡片 */
+    .layout.wide { grid-template-columns: minmax(0,1fr); }
+    .layout.wide .aside { display: none; }
+    .sh { display: flex; align-items: baseline; gap: 10px; margin: 30px 0 12px; }
+    .sh:first-child { margin-top: 0; }
+    .sh h2 { font-size: 19px; font-weight: 800; letter-spacing: -0.02em; }
+    .sh small { color: var(--text-3); font-size: 12px; }
+    .sh a { margin-left: auto; font-size: 13px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+    .sh a:hover { color: var(--text-1); }
+    .cover { background: var(--panel-2) center / cover no-repeat; }
+    .cover:not([style*="url"])::before { content: "🎮"; display: grid; place-items: center; height: 100%; font-size: 28px; opacity: .3; }
+    /* ① PS Plus 会免：大图 bento */
+    .hero { display: grid; grid-template-columns: 1.5fr 1fr; grid-auto-rows: 170px; gap: 12px; }
+    .hero .hc { position: relative; border-radius: 16px; overflow: hidden; cursor: pointer; box-shadow: var(--shadow); }
+    .hero .hc:first-child { grid-row: span 2; }
+    .hero .hc:only-child, .hero .hc:first-child:nth-last-child(2) { grid-row: span 2; }
+    .hc .cover { position: absolute; inset: 0; transition: transform .4s; }
+    .hc:hover .cover { transform: scale(1.04); }
+    .hc .ov { position: absolute; inset: auto 0 0 0; padding: 40px 16px 14px; background: linear-gradient(transparent, rgba(0,0,0,.82)); color: #fff; }
+    .hc .ov b { display: block; font-size: 17px; font-weight: 800; line-height: 1.3; }
+    .hc:first-child .ov b { font-size: 24px; }
+    .hc .ov span { font-size: 12px; opacity: .8; }
+    .pill { display: inline-block; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 999px; background: #f5b800; color: #2a1d00; margin-bottom: 6px; }
+    /* ② 目录新增：竖版海报横滑 */
+    .prow { display: grid; grid-auto-flow: column; grid-auto-columns: 148px; gap: 12px; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; }
+    .pc { cursor: pointer; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+    .pc .cover { aspect-ratio: 3/4; border-radius: 12px; position: relative; box-shadow: var(--shadow); transition: transform .15s; }
+    .pc:hover .cover { transform: translateY(-3px); }
+    .pc b { font-size: 13px; font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .pc .pr { display: flex; align-items: baseline; gap: 6px; font-size: 13px; }
+    .pc .pr b { color: #ef4444; font-weight: 800; }
+    .pc .pr s { color: var(--text-3); font-size: 11.5px; }
+    /* ③ 高分佳作：海报网格 + 评分角标 */
+    .pgrid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+    .mcb { position: absolute; left: 8px; top: 8px; min-width: 34px; height: 34px; padding: 0 5px; border-radius: 8px; display: grid; place-items: center; font-weight: 900; font-size: 16px; box-shadow: 0 2px 8px rgba(0,0,0,.3); }
+    .s-g { background: #22c55e; color: #fff; } .s-y { background: #fbbf24; color: #1f1600; } .s-r { background: #ef4444; color: #fff; }
+    .pc .off { position: absolute; right: 0; bottom: 10px; font-weight: 900; font-size: 13px; color: #fff; background: #ef4444; padding: 2px 9px 2px 11px; clip-path: polygon(7px 0, 100% 0, 100% 100%, 0 100%); }
+    /* ④ 最新折扣：Jump 式行 */
     .jlist { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .wide .jlist { grid-template-columns: repeat(3, minmax(0, 1fr)); }
     .jrow { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 12px; padding: 0; overflow: hidden; cursor: pointer; transition: transform .15s; }
     .jrow:hover { transform: translateY(-2px); }
-    .jc { width: 112px; height: 112px; background: var(--panel-2) center / cover no-repeat; }
-    .jc:not([style*="url"])::before { content: "🎮"; display: grid; place-items: center; height: 100%; font-size: 32px; opacity: .35; }
+    .jc { width: 112px; height: 112px; }
     .jb { display: flex; flex-direction: column; gap: 4px; padding: 9px 10px 9px 0; min-width: 0; }
     .jn { font-weight: 700; font-size: 14.5px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .jt { display: flex; gap: 5px; flex-wrap: wrap; }
@@ -140,6 +169,7 @@
     .t-cat { color: #3b82f6; background: rgba(59,130,246,.14); }
     .t-pre { color: #a855f7; background: rgba(168,85,247,.14); }
     .t-pf { color: var(--text-2); background: var(--hover); }
+    .jt .t-mc { font-weight: 800; }
     .jm { font-size: 11.5px; color: var(--text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .jf { margin-top: auto; display: flex; justify-content: space-between; align-items: flex-end; gap: 6px; }
     .jf s, .psp s { color: var(--text-3); font-size: 12px; margin-left: 5px; }
@@ -147,31 +177,123 @@
     .jr { display: flex; flex-direction: column; align-items: flex-end; gap: 3px; }
     .jr small { font-size: 11px; color: var(--text-3); }
     .jd { font-style: normal; font-weight: 900; font-size: 15px; color: #fff; background: #ef4444; padding: 2px 10px 2px 12px; clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%); border-radius: 0 6px 6px 0; }
+    .qchips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin-bottom: 12px; }
+    .qchips a { padding: 6px 12px; border-radius: 10px; background: var(--panel); box-shadow: var(--shadow); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .qchips a small { color: var(--text-3); margin-left: 5px; font-weight: 500; }
+    .qchips a:hover { box-shadow: 0 0 0 1px var(--line-2); }
+    /* ⑤ 正在流行：三栏排行 */
+    .charts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .chart { padding: 14px 14px 8px; }
+    .chart h4 { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+    .chart h4 a { font-size: 12px; color: var(--text-3); font-weight: 600; }
+    .ci { display: grid; grid-template-columns: 30px 46px minmax(0, 1fr); gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid var(--line); cursor: pointer; }
+    .ci:first-of-type { border-top: 0; }
+    .ci:hover b { color: var(--accent); }
+    .ci .rk { font-size: 22px; font-weight: 900; font-style: italic; color: var(--text-3); text-align: center; }
+    .ci:nth-of-type(1) .rk { color: #f5b800; } .ci:nth-of-type(2) .rk { color: #a3a3b5; } .ci:nth-of-type(3) .rk { color: #d97a3a; }
+    .ci .cover { width: 46px; height: 46px; border-radius: 8px; }
+    .ci b { display: block; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ci span { font-size: 12px; color: var(--text-3); }
+    .ci span em { font-style: normal; color: #ef4444; font-weight: 700; }
+    /* ⑥ 最新发布 / 即将发售：时间线 */
+    .tl2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .tl { padding: 14px 16px 6px; }
+    .tl h4 { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; }
+    .tl h4 a { font-size: 12px; color: var(--text-3); font-weight: 600; }
+    .ti { display: grid; grid-template-columns: 46px 96px minmax(0, 1fr); gap: 12px; align-items: center; padding: 9px 0; position: relative; cursor: pointer; }
+    .ti::before { content: ""; position: absolute; left: 22px; top: 0; bottom: 0; width: 1px; background: var(--line-2); }
+    .ti:first-of-type::before { top: 50%; } .ti:last-child::before { bottom: 50%; }
+    .ti .dt { position: relative; z-index: 1; background: var(--panel); text-align: center; line-height: 1.1; padding: 3px 0; }
+    .ti .dt b { display: block; font-size: 15px; font-weight: 800; }
+    .ti .dt small { font-size: 10.5px; color: var(--text-3); }
+    .ti .cover { width: 96px; aspect-ratio: 16/9; border-radius: 8px; }
+    .ti .nm b { display: block; font-size: 13.5px; font-weight: 600; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .ti .nm span { font-size: 12px; color: var(--text-3); }
+    .ti:hover .nm b { color: var(--accent); }
+    /* 列表页 */
+    .lhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .back { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); font-size: 20px; display: grid; place-items: center; flex-shrink: 0; }
+    .back:hover { background: var(--hover); }
+    .lhead h2 { font-size: 22px; font-weight: 800; }
+    .jbar { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; }
+    .jsubs { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; }
+    .jsubs a { padding: 5px 12px; border-radius: 8px; background: var(--hover); color: var(--text-2); font-size: 13px; font-weight: 600; white-space: nowrap; }
+    .jsubs a.on { background: var(--text-1); color: var(--bg); }
+    .jsubs small { opacity: .6; margin-left: 4px; font-weight: 500; }
     /* 详情弹窗 */
     .psm { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,.65); display: grid; place-items: center; padding: 24px; }
     .psm[hidden] { display: none; }
-    .pss { width: min(720px, 100%); max-height: calc(100vh - 48px); overflow: auto; position: relative; padding: 0; }
-    .psx { position: absolute; right: 12px; top: 12px; z-index: 2; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; }
+    .pss { width: min(760px, 100%); max-height: calc(100vh - 48px); overflow: auto; position: relative; padding: 0; overscroll-behavior: contain; }
+    .psx { position: absolute; right: 12px; top: 12px; z-index: 3; width: 34px; height: 34px; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; }
     .psg { position: relative; aspect-ratio: 16/9; background: #000 center / cover no-repeat; }
     .psg .pn { position: absolute; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; border-radius: 50%; background: rgba(0,0,0,.5); color: #fff; font-size: 20px; }
     .psg .l { left: 10px; } .psg .r { right: 10px; }
-    .pst { display: flex; gap: 6px; padding: 8px 16px 0; overflow-x: auto; }
+    .pst { display: flex; gap: 6px; padding: 8px 18px 0; overflow-x: auto; }
     .pst i { flex: 0 0 96px; height: 54px; border-radius: 6px; background: center / cover no-repeat var(--panel-2); cursor: pointer; opacity: .55; border: 2px solid transparent; }
     .pst i.on { opacity: 1; border-color: var(--accent); }
-    .psb { padding: 14px 18px 20px; display: flex; flex-direction: column; gap: 10px; }
-    .psb h3 { font-size: 21px; font-weight: 800; line-height: 1.3; }
-    .psb .en { color: var(--text-2); font-size: 14px; margin-top: -6px; }
-    .psi { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; }
-    .psi div { background: var(--panel-2); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; }
-    .psi small { color: var(--text-3); font-size: 11px; } .psi b { font-size: 13px; }
-    .psd { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+    .psb { padding: 16px 20px 8px; display: flex; flex-direction: column; gap: 14px; }
+    .psb h3 { font-size: 22px; font-weight: 800; line-height: 1.3; }
+    .psb .en { color: var(--text-2); font-size: 14px; margin-top: -10px; }
+    .psb h5 { font-size: 15px; font-weight: 800; margin-bottom: -4px; display: flex; justify-content: space-between; align-items: baseline; }
+    .psb h5 a, .psb h5 small { font-size: 12px; font-weight: 600; color: var(--text-3); }
+    .scs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .sc { background: var(--panel-2); border-radius: 12px; padding: 12px; display: flex; gap: 12px; align-items: center; min-width: 0; }
+    .sc .big { flex-shrink: 0; width: 52px; height: 52px; border-radius: 10px; display: grid; place-items: center; font-size: 22px; font-weight: 900; }
+    .sc .big.round { border-radius: 50%; }
+    .sc .big.none { background: var(--hover); color: var(--text-3); font-size: 15px; }
+    .sc div { min-width: 0; display: flex; flex-direction: column; }
+    .sc small { font-size: 11.5px; color: var(--text-3); }
+    .sc b { font-size: 13.5px; }
+    .star, .sc small.star { color: #f5b800; }
+    .bars { display: flex; flex-direction: column; gap: 2px; flex: 1; }
+    .bars p { display: grid; grid-template-columns: 10px 1fr 28px; gap: 5px; align-items: center; font-size: 10.5px; color: var(--text-3); }
+    .bars i { height: 5px; border-radius: 3px; background: var(--hover); overflow: hidden; } .bars i::after { content: ""; display: block; height: 100%; width: var(--w); background: #f5b800; }
+    .psi { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+    .psi div { background: var(--panel-2); border-radius: 10px; padding: 8px 10px; display: flex; flex-direction: column; min-width: 0; }
+    .psi small { color: var(--text-3); font-size: 11px; } .psi b { font-size: 13px; overflow: hidden; text-overflow: ellipsis; }
+    .psd { font-size: 13.5px; color: var(--text-2); line-height: 1.75; white-space: pre-line; }
+    .psd.fold { max-height: 7.2em; overflow: hidden; mask-image: linear-gradient(#000 60%, transparent); }
+    .unfold { align-self: flex-start; font-size: 12.5px; font-weight: 700; color: var(--accent); margin-top: -8px; }
+    .rv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .rc { background: var(--panel-2); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+    .rc header { display: flex; align-items: center; gap: 8px; }
+    .rc header b { font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rc header i { font-style: normal; font-weight: 900; font-size: 13px; min-width: 30px; text-align: center; padding: 2px 5px; border-radius: 6px; }
+    .rc p { font-size: 12.5px; color: var(--text-2); line-height: 1.6; display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; cursor: pointer; }
+    .rc p.open { -webkit-line-clamp: unset; }
+    .rc footer { font-size: 11px; color: var(--text-3); display: flex; justify-content: space-between; }
+    .rc footer a:hover { color: var(--text-1); }
+    .eds { display: flex; flex-direction: column; gap: 8px; }
+    .ed { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; background: var(--panel-2); border-radius: 12px; padding: 10px 12px; }
+    .ed b { font-size: 13.5px; } .ed .fe { grid-column: 1; font-size: 12px; color: var(--text-3); }
+    .ed .ep { grid-row: 1 / span 2; grid-column: 2; text-align: right; align-self: center; }
+    .ed .ep b { color: #ef4444; font-size: 15px; display: block; } .ed .ep s { color: var(--text-3); font-size: 11.5px; }
+    .phist { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12.5px; color: var(--text-2); }
+    .phist svg { flex-shrink: 0; }
     .psp { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .psp .pp { color: #d9a400; font-weight: 700; font-size: 13px; }
-    .psa { display: flex; gap: 10px; flex-wrap: wrap; } .psa .btn { flex: 1; padding: 11px; }
+    .psa { position: sticky; bottom: 0; z-index: 2; display: flex; gap: 10px; padding: 12px 20px 16px; background: linear-gradient(transparent, var(--panel) 30%); }
+    .psa .btn { flex: 1; padding: 11px; }
+    .loading { color: var(--text-3); font-size: 12.5px; }
+    @media (max-width: 980px) {
+      .pgrid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+      .charts { grid-template-columns: 1fr; }
+      .wide .jlist { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
     @media (max-width: 760px) {
-      .jlist { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr 1fr; grid-auto-rows: 120px; }
+      .hero .hc:first-child { grid-column: 1 / -1; grid-row: span 2; }
+      .pgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+      .pgrid .pc:nth-child(n+10) { display: none; }               /* 3 列只放 9 个，不留单个 */
+      .pc .pr s { display: none; }
+      .sh { flex-wrap: wrap; row-gap: 2px; } .sh h2 { font-size: 17px; white-space: nowrap; } .sh small { order: 3; flex-basis: 100%; }
+      .hero { grid-auto-rows: 130px; } .hc .ov { padding: 30px 12px 10px; } .hc .ov b { font-size: 14px; } .hc:first-child .ov b { font-size: 20px; }
+      .hc .pill { margin-bottom: 4px; }
+      .prow { grid-auto-columns: 120px; }
+      .tl2 { grid-template-columns: 1fr; }
+      .jlist, .wide .jlist { grid-template-columns: 1fr; }
       .jrow { grid-template-columns: 100px minmax(0, 1fr); } .jc { width: 100px; height: 100px; }
-      .jtabs button { font-size: 16px; }
+      .scs, .rv { grid-template-columns: 1fr; }
       .psm { padding: 0; place-items: end center; } .pss { max-height: 92vh; border-radius: 16px 16px 0 0; }
     }
 
@@ -319,11 +441,12 @@ const store = {
 };
 const SITE = 'https://climb0516.github.io/game-deals/';
 const VIEWS = ['ps', 'free', 'steam', 'sales', 'console'];
+const hashView = () => location.hash.slice(1).split('/')[0];   // #ps/deal/low → ps
 
 let DATA = null;
 const state = {
-  view: VIEWS.includes(location.hash.slice(1)) ? location.hash.slice(1) : store.get('view2', 'ps'),
-  psTab: store.get('psTab', 'deal'), psSub: store.get('psSub', {}), psSort: store.get('psSort', 'hot'), psShown: 30,
+  view: VIEWS.includes(hashView()) ? hashView() : store.get('view2', 'ps'),
+  psSort: store.get('psSort', 'hot'), psShown: 30, psTop: 0,
   plat: 'all', loot: store.get('loot', false),
   price: store.get('price', 0), disc: store.get('disc', 0), rate: store.get('rate', 0),
   sort: store.get('sort', 'rank'), lowOnly: store.get('lowOnly', false), shown: 60,
@@ -436,90 +559,189 @@ function renderConsole() {
       <div class="r">${g.end ? `剩 ${left(g.end)}` : '截止时间未知'}</div></a>`).join('') || '<div class="empty">暂无</div>'}</div>`;
 }
 
-// ── PlayStation 港服（Jump 式：四个大标签 + 子筛选 + 紧凑列表 + 详情页）──
+// ── PlayStation 港服：首页每个栏目一种卡片，「查看更多」进列表页（#ps/分组/子项），点游戏弹详情 ──
 const hk = v => v == null ? '' : 'HK$' + (Number.isInteger(v) ? v : (+v).toFixed(2).replace(/\.?0+$/, ''));
 const ps = u => u ? `background-image:url('${esc(u).replace(/'/g, '%27')}')` : '';
-// 官方 PS Plus 页面的图打不开时，按名字从港服商店数据里借一张封面 / 找到对应商品
+// 官方 PS Plus 页面只有名字和配图：按名字在港服商店数据里找对应商品（价格、详情）
 const nkey = n => (n || '').replace(/[\s：:·™®《》()（）\-]/g, '').toLowerCase();
 function psFind(name) {
   const P = DATA.ps_hk || {}, k = nkey(name).slice(0, 5);
   if (!k) return null;
   return Object.values(P).flat().find(x => x && x.name && nkey(x.name).includes(k)) || null;
 }
-function psCover(name) { return psFind(name)?.cover || ''; }
-const PS_TABS = [
-  ['plus', '最新 PS Plus', [['monthly', '每月会免'], ['catalog', '目录新增'], ['incat', '目录内打折']]],
-  ['deal', '最新折扣', [['pick', '精选'], ['all', '全部'], ['low', '史低'], ['big', '大折扣'], ['plus', '会员价'], ['soon', '即将结束'], ['zh', '中文']]],
-  ['hot', '正在流行', [['top_sales', '畅销'], ['top_downloads', '最多下载'], ['f2p', '免费游玩']]],
-  ['new', '最新发布', [['new_release', '新游戏'], ['new_hot', '新游戏热门'], ['preorder', '预购']]],
-];
-const PS_SORT = [['hot', '热度'], ['pct', '折扣'], ['price', '价格'], ['end', '剩余时间']];
-let PS_ITEMS = [];                                       // 当前列表，详情页按下标取
-function psList(tab, sub) {
+const PS_GROUPS = {
+  plus: ['PS Plus 会员', [['monthly', '每月会免'], ['catalog', '目录新增'], ['incat', '目录内打折']]],
+  deal: ['港服折扣', [['pick', '精选'], ['top', '高分佳作'], ['all', '全部'], ['low', '史低'], ['big', '大折扣'], ['plus', '会员价'], ['soon', '即将结束'], ['zh', '中文']]],
+  hot: ['正在流行', [['top_sales', '畅销'], ['top_downloads', '最多下载'], ['f2p', '免费游玩']]],
+  new: ['最新发布', [['new_release', '新游戏'], ['new_hot', '新游戏热门'], ['preorder', '预购']]],
+};
+const PS_SORT = [['hot', '热度'], ['score', '评分'], ['pct', '折扣'], ['price', '价格'], ['end', '剩余时间']];
+function psList(group, sub) {
   const P = DATA.ps_hk || {}, plus = DATA.ps_plus_hk || {}, deals = P.deals || [];
-  if (tab === 'plus') {
+  if (group === 'plus') {
     if (sub === 'incat') return deals.filter(x => x.catalog);
     return (plus[sub] || []).map(g => { const m = psFind(g.name) || {};
-      return { ...m, name: g.name, cover: g.img || m.cover || '', plusTag: sub === 'monthly' ? '会员免费' : '目录可玩', url: m.url || g.url, plusUrl: g.url }; });
+      return { ...m, name: g.name, img: g.img, cover: m.cover || g.img || '', poster: m.poster || '', plusTag: sub === 'monthly' ? '会员免费' : '目录可玩', url: m.url || g.url, plusUrl: g.url }; });
   }
-  if (tab === 'deal') {
+  if (group === 'deal') {
     const on = deals.filter(x => x.pct > 0 || x.plus_price);
-    const l = { pick: on.slice(0, 60), all: on, low: on.filter(x => x.low), big: on.filter(x => x.pct >= 50), plus: on.filter(x => x.plus_price),
-      soon: on.filter(x => x.end && ms(x.end) - Date.now() < 3 * 864e5), zh: on.filter(x => x.zh) }[sub] || on;
-    const k = state.psSort;
-    if (k === 'pct') return [...l].sort((a, b) => b.pct - a.pct);
-    if (k === 'price') return [...l].sort((a, b) => a.price - b.price);
-    if (k === 'end') return [...l].filter(x => x.end).sort((a, b) => a.end.localeCompare(b.end));
-    return l;
+    return { pick: on.slice(0, 60), top: on.filter(x => x.mc >= 75).sort((a, b) => b.mc - a.mc), all: on, low: on.filter(x => x.low), big: on.filter(x => x.pct >= 50),
+      plus: on.filter(x => x.plus_price), soon: on.filter(x => x.end && ms(x.end) - Date.now() < 3 * 864e5), zh: on.filter(x => x.zh) }[sub] || on;
   }
+  if (sub === 'preorder') return [...(P.preorder || [])].sort((a, b) => (a.release || '9').localeCompare(b.release || '9'));
   return P[sub] || [];
 }
+function psSorted(l) {
+  const k = state.psSort;
+  if (k === 'score') return [...l].sort((a, b) => (b.mc ?? -1) - (a.mc ?? -1) || (b.star ?? 0) - (a.star ?? 0));
+  if (k === 'pct') return [...l].sort((a, b) => (b.pct || 0) - (a.pct || 0));
+  if (k === 'price') return [...l].sort((a, b) => (a.price ?? 1e9) - (b.price ?? 1e9));
+  if (k === 'end') return [...l].filter(x => x.end).sort((a, b) => a.end.localeCompare(b.end));
+  return l;
+}
+// 页面上每张卡对应的游戏放进 REG，点击按下标取
+let REG = [];
+const reg = x => (REG.push(x), REG.length - 1);
+const scls = (v, max = 100) => v == null ? '' : v / max >= 0.75 ? 's-g' : v / max >= 0.5 ? 's-y' : 's-r';
+const priceTxt = x => x.free || x.price === 0 ? '免费' : x.price != null ? hk(x.price) : '';
 function daysLeft(iso) { const d = (ms(iso) - Date.now()) / 864e5; return d < 1 ? `剩余 ${Math.max(1, Math.round(d * 24))} 小时` : `剩余 ${Math.ceil(d)} 天`; }
-function psRow(x, i) {
-  const tags = [x.plusTag ? `<span class="t-plus">${x.plusTag}</span>` : '', x.zh ? '<span class="t-zh">中文</span>' : '', x.low ? '<span class="t-low">史低</span>' : '',
-    x.preorder ? '<span class="t-pre">预购</span>' : '', x.catalog ? '<span class="t-cat">目录内</span>' : '', x.plus_price ? `<span class="t-plus">会员 ${hk(x.plus_price)}</span>` : '',
+const WEEK = '日一二三四五六';
+
+function psRow(x) {
+  const tags = [x.mc != null ? `<span class="t-mc ${scls(x.mc)}">MC ${x.mc}</span>` : '', x.plusTag ? `<span class="t-plus">${x.plusTag}</span>` : '',
+    x.zh ? '<span class="t-zh">中文</span>' : '', x.low ? '<span class="t-low">史低</span>' : '', x.preorder ? '<span class="t-pre">预购</span>' : '',
+    x.catalog ? '<span class="t-cat">目录内</span>' : '', x.plus_price ? `<span class="t-plus">会员 ${hk(x.plus_price)}</span>` : '',
     ...(x.platforms || []).map(p => `<span class="t-pf">${esc(p)}</span>`)].join('');
   const meta = [x.release, x.publisher, (x.genres || [])[0]].filter(Boolean).map(esc).join(' · ');
-  const price = x.free || x.price === 0 ? '<b class="jp">免费</b>' : x.price != null ? `<b class="jp num">${hk(x.price)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s>` : ''}` : '';
-  return `<div class="panel jrow" data-psi="${i}">
-    <i class="jc" style="${ps(x.cover)}"></i>
+  const price = priceTxt(x) ? `<b class="jp num">${priceTxt(x)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s>` : ''}` : '';
+  return `<div class="panel jrow" data-psi="${reg(x)}">
+    <i class="jc cover" style="${ps(x.cover)}"></i>
     <div class="jb"><div class="jn">${esc(x.name)}</div><div class="jt">${tags}</div>${meta ? `<div class="jm">${meta}</div>` : ''}
-      <div class="jf"><span>${price}</span><span class="jr">${x.end && x.pct ? `<small>${daysLeft(x.end)}</small>` : x.end && x.plus_price ? `<small>${daysLeft(x.end)}</small>` : ''}${x.pct ? `<em class="jd">-${x.pct}%</em>` : ''}</span></div></div></div>`;
+      <div class="jf"><span>${price}</span><span class="jr">${x.end && (x.pct || x.plus_price) ? `<small>${daysLeft(x.end)}</small>` : ''}${x.pct ? `<em class="jd">-${x.pct}%</em>` : ''}</span></div></div></div>`;
 }
-function renderPs() {
+const sh = (title, note, href) => `<div class="sh"><h2>${title}</h2>${note ? `<small>${note}</small>` : ''}${href ? `<a href="${href}">查看更多 →</a>` : ''}</div>`;
+
+function renderPsHome() {
   const P = DATA.ps_hk || {}, plus = DATA.ps_plus_hk || {};
   if (!(P.deals || []).length && !plus.monthly) { $('#view-ps').innerHTML = '<div class="panel empty">港服数据还没抓到，稍后再看</div>'; return; }
-  const tab = PS_TABS.find(t => t[0] === state.psTab) || PS_TABS[1];
-  const sub = tab[2].find(x => x[0] === state.psSub[tab[0]]) ? state.psSub[tab[0]] : tab[2][0][0];
-  const list = psList(tab[0], sub); PS_ITEMS = list;
-  const shown = list.slice(0, state.psShown);
-  $('#view-ps').innerHTML = `
-    <div class="jtabs">${PS_TABS.map(([k, n]) => `<button class="${k === tab[0] ? 'on' : ''}" data-pstab="${k}">${n}</button>`).join('')}</div>
-    <div class="jbar"><div class="jsubs">${tab[2].map(([k, n]) => `<button class="${k === sub ? 'on' : ''}" data-pssub="${k}">${n}<small>${psList(tab[0], k).length}</small></button>`).join('')}</div>
-      ${tab[0] === 'deal' ? `<select class="sel" id="psSort">${PS_SORT.map(([k, n]) => `<option value="${k}" ${k === state.psSort ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>
-    ${tab[0] === 'deal' && sub === 'low' && !list.length ? '<div class="muted" style="margin:0 0 10px">港服价格从 10/21 开始记录，满 7 天后才标「史低」。</div>' : ''}
-    <div class="jlist">${shown.map(psRow).join('') || '<div class="panel empty" style="grid-column:1/-1">暂无</div>'}</div>
-    ${list.length > shown.length ? `<div style="text-align:center;margin-top:14px"><button class="btn" id="psMore">加载更多（${shown.length} / ${list.length}）</button></div>` : ''}
-    <div class="muted" style="margin-top:14px">港服价格（港币）· 数据来自 PlayStation Store 官方 · ${esc((DATA.sources.find(s => s.name === 'PS 港服商店') || {}).updated || '').slice(5, 16).replace('T', ' ')} 更新</div>`;
+  REG = [];
+  const monthly = psList('plus', 'monthly'), catalog = psList('plus', 'catalog'), top = psList('deal', 'top').slice(0, 10);
+  const pick = psList('deal', 'pick').slice(0, 6);
+  const nr = [...(P.new_release || [])].filter(x => x.release).sort((a, b) => b.release.localeCompare(a.release)).slice(0, 6);
+  const pre = psList('new', 'preorder').slice(0, 6);
+  const tlItem = x => { const d = x.release ? new Date(x.release + 'T00:00:00') : null;
+    return `<div class="ti" data-psi="${reg(x)}"><div class="dt">${d ? `<b>${d.getMonth() + 1}/${d.getDate()}</b><small>周${WEEK[d.getDay()]}</small>` : '<b>待定</b>'}</div>
+      <i class="cover" style="${ps((x.shots || [])[0] || x.cover)}"></i><div class="nm"><b>${esc(x.name)}</b><span>${[priceTxt(x), x.mc != null ? 'MC ' + x.mc : '', (x.genres || [])[0]].filter(Boolean).map(esc).join(' · ')}</span></div></div>`; };
+  const chart = (k, n) => `<div class="panel chart"><h4>${n}<a href="#ps/hot/${k}">全部 →</a></h4>${(P[k] || []).slice(0, 5).map((x, i) =>
+    `<div class="ci" data-psi="${reg(x)}"><span class="rk">${i + 1}</span><i class="cover" style="${ps(x.cover)}"></i><div style="min-width:0"><b>${esc(x.name)}</b>
+      <span>${x.pct ? `<em>${hk(x.price)}</em> -${x.pct}%` : priceTxt(x)}${x.star ? ` · <span class="star">★</span> ${x.star}` : ''}</span></div></div>`).join('')}</div>`;
+  const deals = P.deals || [], on = deals.filter(x => x.pct > 0 || x.plus_price);
+  const quick = [['low', '史低'], ['big', '5 折以下'], ['top', '高分佳作'], ['plus', '会员价'], ['soon', '即将结束'], ['zh', '中文']]
+    .map(([k, n]) => [k, n, psList('deal', k).length]).filter(r => r[2]);
+  $('#view-ps').innerHTML =
+    (monthly.length ? sh('PS Plus 本月会免', '二档及以上会员免费领取', '#ps/plus/monthly') +
+      `<div class="hero">${monthly.slice(0, 3).map(x => `<div class="hc" data-psi="${reg(x)}"><i class="cover" style="${ps(x.img || x.cover)}"></i>
+        <div class="ov"><span class="pill">会员免费</span><b>${esc(x.name)}</b>${x.base ? `<span>原价 ${hk(x.base)}</span>` : ''}</div></div>`).join('')}</div>` : '') +
+    (catalog.length ? sh('游戏目录新增', '高级 / 至尊会员可玩', '#ps/plus/catalog') +
+      `<div class="prow">${catalog.map(x => `<div class="pc" data-psi="${reg(x)}"><i class="cover" style="${ps(x.poster || x.img || x.cover)}"></i><b>${esc(x.name)}</b></div>`).join('')}</div>` : '') +
+    (top.length ? sh('高分佳作在打折', 'Metacritic 媒体评分 ≥ 75', '#ps/deal/top') +
+      `<div class="pgrid">${top.map(x => `<div class="pc" data-psi="${reg(x)}"><i class="cover" style="${ps(x.poster || x.cover)}"><span class="mcb ${scls(x.mc)}">${x.mc}</span>${x.pct ? `<em class="off">-${x.pct}%</em>` : ''}</i>
+        <b>${esc(x.name)}</b><div class="pr"><b class="num">${priceTxt(x)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s>` : ''}</div></div>`).join('')}</div>` : '') +
+    sh('最新折扣', `港服 ${on.length} 款在打折`, '#ps/deal/pick') +
+    `<div class="qchips">${quick.map(([k, n, c]) => `<a href="#ps/deal/${k}">${n}<small>${c}</small></a>`).join('')}<a href="#ps/deal/all">全部<small>${on.length}</small></a></div>
+     <div class="jlist">${pick.map(psRow).join('')}</div>` +
+    sh('正在流行', '港服 PS5 近 30 天', '') +
+    `<div class="charts">${chart('top_sales', '畅销')}${chart('top_downloads', '最多下载')}${chart('f2p', '免费游玩')}</div>` +
+    sh('最新发布', '', '#ps/new/new_release') +
+    `<div class="tl2"><div class="panel tl"><h4>刚刚发售<a href="#ps/new/new_release">全部 →</a></h4>${nr.map(tlItem).join('')}</div>
+      <div class="panel tl"><h4>即将发售 · 预购<a href="#ps/new/preorder">全部 →</a></h4>${pre.map(tlItem).join('') || '<div class="muted" style="padding:10px 0">暂无</div>'}</div></div>
+    <div class="muted" style="margin-top:18px">港服价格（港币）来自 PlayStation Store 官方；评分来自 Metacritic 与 PS Store · ${esc((DATA.sources.find(s => s.name === 'PS 港服商店') || {}).updated || '').slice(5, 16).replace('T', ' ')} 更新</div>`;
 }
-// ── 详情页（弹窗）──
-let psGal = 0, PS_CUR = null;
+
+function renderPsList(group, sub) {
+  const g = PS_GROUPS[group] || PS_GROUPS.deal;
+  if (!g[1].some(([k]) => k === sub)) sub = g[1][0][0];
+  REG = [];
+  const raw = psList(group, sub), list = group === 'deal' || group === 'new' && sub !== 'preorder' ? psSorted(raw) : raw;
+  const shown = list.slice(0, state.psShown);
+  $('#view-ps').innerHTML = `<div class="lhead"><button class="back" id="psBack" title="返回">‹</button><h2>${g[0]}</h2></div>
+    <div class="jbar"><div class="jsubs">${g[1].map(([k, n]) => `<a class="${k === sub ? 'on' : ''}" href="#ps/${group}/${k}">${n}<small>${psList(group, k).length}</small></a>`).join('')}</div>
+      ${group === 'deal' || group === 'new' && sub !== 'preorder' ? `<select class="sel" id="psSort">${PS_SORT.map(([k, n]) => `<option value="${k}" ${k === state.psSort ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>
+    ${group === 'deal' && sub === 'low' && !list.length ? '<div class="muted" style="margin:0 0 10px">港服价格从 10/21 开始记录，满 7 天后才标「史低」。</div>' : ''}
+    <div class="jlist">${shown.map(psRow).join('') || '<div class="panel empty" style="grid-column:1/-1">暂无</div>'}</div>
+    ${list.length > shown.length ? `<div style="text-align:center;margin-top:16px"><button class="btn" id="psMore">加载更多（${shown.length} / ${list.length}）</button></div>` : ''}`;
+}
+
+function renderPs() {
+  const [, group, sub] = location.hash.split('/');
+  $('.layout').classList.toggle('wide', !!group);
+  group ? renderPsList(group, sub) : renderPsHome();
+}
+
+// ── 详情弹窗：基础信息先出，ps_detail.json（评分、评测、版本）读到后补上 ──
+let DETAIL = null, detailP = null;
+const loadDetail = () => detailP || (detailP = fetch('ps_detail.json?t=' + Date.now(), { cache: 'no-store' }).then(r => r.json()).then(d => (DETAIL = d.games || {})).catch(() => (DETAIL = {})));
+const SENT = { 'Universal acclaim': '好评如潮', 'Generally favorable': '多数好评', 'Mixed or average': '褒贬不一', 'Generally unfavorable': '多数差评', 'Overwhelming dislike': '差评如潮' };
+const LANG = { zh: '简体中文', ch: '繁体中文', en: '英语', ja: '日语', ko: '韩语', fr: '法语', de: '德语', es: '西班牙语', es_MX: '西班牙语（拉美）', it: '意大利语', ru: '俄语',
+  pt_BR: '葡萄牙语（巴西）', pt: '葡萄牙语', ar: '阿拉伯语', pl: '波兰语', th: '泰语', tr: '土耳其语', uk: '乌克兰语', nl: '荷兰语' };
+const langs = l => { const z = l.filter(c => c === 'zh' || c === 'ch').map(c => LANG[c]); const o = l.filter(c => c !== 'zh' && c !== 'ch');
+  return l.length ? [...z, ...o.slice(0, z.length ? 2 : 3).map(c => LANG[c] || c)].join('、') + (l.length > z.length + 3 ? ` 等 ${l.length} 种` : '') : ''; };
+const wan = n => n >= 1e4 ? (n / 1e4).toFixed(1).replace(/\.0$/, '') + ' 万' : n.toLocaleString() + ' ';
+// 商店介绍开头常是「购买后可同时下载 PS4 / PS5 版」「※另有套装包」这类购买须知，去掉；多个空行并成一个
+const cleanDesc = t => (t || '').split('\n').map(l => l.trim()).filter(l => !/^※|^购买(该|本|此)(产品|商品|游戏)后|请注意避免重复购买|^本(产品|商品)(包含|为)/.test(l)).join('\n').replace(/\n{2,}/g, '\n').trim();
+let psGal = 0, PS_CUR = null, psFold = true;
+function spark(h) {
+  const e = Object.entries(h || {}).sort();
+  const v = e.map(r => r[1]), lo = Math.min(...v), hi = Math.max(...v), W = 150, H = 34;
+  if (e.length < 3 || hi === lo) return '';                // 价格没变过就不画
+  const pts = v.map((p, i) => `${(i / (v.length - 1) * W).toFixed(1)},${(hi === lo ? H / 2 : H - 3 - (p - lo) / (hi - lo) * (H - 6)).toFixed(1)}`).join(' ');
+  return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}"><polyline points="${pts}" fill="none" stroke="#ef4444" stroke-width="2" stroke-linejoin="round"/></svg>`;
+}
 function psSheet() {
-  const x = PS_CUR, shots = (x.shots && x.shots.length ? x.shots : [x.cover]).filter(Boolean);
-  const info = [['发售日', x.release], ['发行商', x.publisher], ['类型', (x.genres || []).join(' / ')], ['人数', x.players ? x.players + ' 人' : ''], ['语言', x.zh ? '中文' : '']].filter(r => r[1]);
+  const x = PS_CUR, D = DETAIL ? (DETAIL[x.cid] || {}) : null, s = D?.s || {}, m = D?.m || null;
+  const shots = (x.shots && x.shots.length ? x.shots : [x.img || x.cover]).filter(Boolean);
+  const info = [['发售日', x.release], ['发行商', x.publisher], ['类型', (x.genres || []).join(' / ')], ['人数', x.players ? x.players + ' 人' : ''],
+    ['年龄分级', s.rating?.name], ['通关时长', m?.playtime], ['难度', m?.difficulty], ['语音', langs(s.voice || [])], ['字幕', langs(s.text || [])]].filter(r => r[1]);
+  const st = s.star;
+  const scores = D ? `<div class="scs">
+      <div class="sc"><span class="big ${m?.score != null ? scls(m.score) : 'none'}">${m?.score ?? '—'}</span><div><small>Metacritic 媒体评分</small><b>${m?.score != null ? SENT[m.sentiment] || '' : '暂无'}</b><small>${m?.count ? m.count + ' 篇评测' : ''}</small></div></div>
+      <div class="sc"><span class="big round ${m?.uscore != null ? scls(m.uscore, 10) : 'none'}">${m?.uscore != null ? (+m.uscore).toFixed(1) : '—'}</span><div><small>Metacritic 玩家评分</small><b>${m?.uscore != null ? SENT[m.usentiment] || '' : '暂无'}</b><small>${m?.ucount ? wan(m.ucount) + '人评分' : ''}</small></div></div>
+      <div class="sc">${st ? `<div style="flex-shrink:0;align-items:center"><b style="font-size:22px;font-weight:900">${st.avg.toFixed(2)}</b><small class="star">★★★★★</small><small>${wan(st.count)}人评分</small></div>
+        <div class="bars">${[5, 4, 3, 2, 1].map(k => `<p>${k}<i style="--w:${st.dist[k] || 0}%"></i>${st.dist[k] || 0}%</p>`).join('')}</div>` : '<span class="big none">—</span><div><small>PS Store 玩家星级</small><b>暂无</b></div>'}</div>
+    </div>` : '<div class="loading">正在读取评分和评测…</div>';
+  const ed0 = (s.editions || []).find(e => e.id === x.id) || (s.editions || [])[0];
+  const hist = (DATA.ps_price_history || {})[x.id];
+  const desc = cleanDesc(s.desc || x.desc);
   $('#psSheet').innerHTML = `<button class="psx" data-psclose>✕</button>
     <div class="psg" style="${ps(shots[psGal])}">${shots.length > 1 ? '<button class="pn l" data-psg="-1">‹</button><button class="pn r" data-psg="1">›</button>' : ''}</div>
     ${shots.length > 1 ? `<div class="pst">${shots.map((u, i) => `<i class="${i === psGal ? 'on' : ''}" data-psgi="${i}" style="${ps(u)}"></i>`).join('')}</div>` : ''}
     <div class="psb"><h3>${esc(x.name)}</h3>${x.en && nkey(x.en) !== nkey(x.name) ? `<div class="en">${esc(x.en)}</div>` : ''}
-      <div class="jt">${(x.platforms || []).map(p => `<span class="t-pf">${esc(p)}</span>`).join('')}${x.zh ? '<span class="t-zh">中文</span>' : ''}${x.catalog ? '<span class="t-cat">游戏目录内</span>' : ''}${x.trial ? '<span class="t-cat">可试玩</span>' : ''}${x.preorder ? '<span class="t-pre">预购</span>' : ''}</div>
-      ${info.length ? `<div class="psi">${info.map(([k, v]) => `<div><small>${k}</small><b>${esc(v)}</b></div>`).join('')}</div>` : ''}
-      ${x.desc ? `<p class="psd">${esc(x.desc)}</p>` : ''}
-      <div class="psp">${x.free || x.price === 0 ? '<b class="jp">免费</b>' : x.price != null ? `<b class="jp num">${hk(x.price)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s><em class="jd">-${x.pct}%</em>` : ''}` : ''}
+      <div class="jt">${m?.must ? '<span class="s-y">Must-Play</span>' : ''}${(x.platforms || []).map(p => `<span class="t-pf">${esc(p)}</span>`).join('')}${x.zh ? '<span class="t-zh">中文</span>' : ''}${x.plusTag ? `<span class="t-plus">${x.plusTag}</span>` : ''}${x.catalog ? '<span class="t-cat">游戏目录内</span>' : ''}${x.trial ? '<span class="t-cat">可试玩</span>' : ''}${x.preorder ? '<span class="t-pre">预购</span>' : ''}${x.low ? '<span class="t-low">史低</span>' : ''}</div>
+      ${x.cid ? scores : ''}
+      <div class="psp">${priceTxt(x) ? `<b class="jp num">${priceTxt(x)}</b>${x.pct ? `<s class="num">${hk(x.base)}</s><em class="jd">-${x.pct}%</em>` : ''}` : ''}
         ${x.plus_price ? `<span class="pp">PS Plus 会员 ${hk(x.plus_price)}</span>` : ''}${x.end ? `<span class="muted">${daysLeft(x.end)} · ${mdhm(x.end)} 截止</span>` : ''}</div>
-      <div class="psa">${x.url ? `<a class="btn primary" href="${esc(x.url)}" target="_blank" rel="noopener">去 PS Store ${x.preorder ? '预购' : '购买'}</a>` : ''}${x.plusUrl ? `<a class="btn" href="${esc(x.plusUrl)}" target="_blank" rel="noopener">PS Plus 页面</a>` : ''}</div>
-    </div>`;
+      ${ed0 && (ed0.low30 || ed0.launch) || hist ? `<div class="phist">${spark(hist)}<span>${[ed0?.low30 ? '近 30 天最低 ' + esc(ed0.low30) : '', ed0?.launch ? '首发价 ' + esc(ed0.launch) : '',
+        hist ? `本站记录 ${Object.keys(hist).length} 天，最低 ${hk(Math.min(...Object.values(hist)))}` : ''].filter(Boolean).join(' · ')}</span></div>` : ''}
+      ${info.length ? `<div class="psi">${info.map(([k, v]) => `<div><small>${k}</small><b title="${esc(v)}">${esc(v)}</b></div>`).join('')}</div>` : ''}
+      ${desc ? `<h5>游戏介绍</h5><p class="psd ${psFold && desc.length > 160 ? 'fold' : ''}">${esc(desc)}</p>${desc.length > 160 ? `<button class="unfold" data-psfold>${psFold ? '展开全部' : '收起'}</button>` : ''}` : ''}
+      ${m?.critic?.length ? `<h5>媒体评测<a href="${esc(m.url)}critic-reviews/" target="_blank" rel="noopener">全部 ${m.count || ''} 篇 →</a></h5>
+        <div class="rv">${m.critic.map(r => `<div class="rc"><header><b>${esc(r.src)}</b><i class="${scls(r.score)}">${r.score}</i></header><p>${esc(r.quote)}</p>
+          <footer><span>${esc(r.date || '')}</span>${r.url ? `<a href="${esc(r.url)}" target="_blank" rel="noopener">原文 →</a>` : ''}</footer></div>`).join('')}</div>` : ''}
+      ${m?.users?.length ? `<h5>玩家评价<a href="${esc(m.url)}user-reviews/" target="_blank" rel="noopener">全部 →</a></h5>
+        <div class="rv">${m.users.map(r => `<div class="rc"><header><b>${esc(r.author)}</b><i class="${scls(r.score, 10)}">${r.score}</i></header><p>${esc(r.quote)}</p><footer><span>${esc(r.date || '')}</span></footer></div>`).join('')}</div>` : ''}
+      ${(s.editions || []).length > 1 ? `<h5>版本<small>价格以商店为准</small></h5><div class="eds">${s.editions.map(e => `<div class="ed"><b>${esc(e.edition || e.name)}</b>
+        <span class="ep"><b class="num">${esc(e.price)}</b>${e.orig && e.orig !== e.price ? `<s class="num">${esc(e.orig)}</s>` : ''}</span>${e.features.length ? `<span class="fe">${e.features.map(esc).join('、')}</span>` : ''}</div>`).join('')}</div>` : ''}
+      ${s.rating?.notes?.length ? `<div class="muted">${esc(s.rating.name)} · ${s.rating.notes.map(esc).join('、')}</div>` : ''}
+      ${m ? `<div class="muted">评分评测来自 Metacritic（${esc(m.title)}${m.year ? ' · ' + m.year : ''}），评测原文为英文</div>` : ''}
+    </div>
+    <div class="psa">${x.url ? `<a class="btn primary" href="${esc(x.url)}" target="_blank" rel="noopener">去 PS Store ${x.preorder ? '预购' : '购买'}</a>` : ''}${m ? `<a class="btn" href="${esc(m.url)}" target="_blank" rel="noopener">Metacritic</a>` : ''}${x.plusUrl ? `<a class="btn" href="${esc(x.plusUrl)}" target="_blank" rel="noopener">PS Plus 页面</a>` : ''}</div>`;
 }
-function psOpen(i) { PS_CUR = PS_ITEMS[i]; if (!PS_CUR) return; psGal = 0; psSheet(); $('#psModal').hidden = false; document.body.style.overflow = 'hidden'; }
+function psOpen(i) {
+  PS_CUR = REG[i]; if (!PS_CUR) return;
+  psGal = 0; psFold = true; psSheet(); $('#psSheet').scrollTop = 0;
+  $('#psModal').hidden = false; document.body.style.overflow = 'hidden';
+  if (!DETAIL) loadDetail().then(() => { if (!$('#psModal').hidden) psSheet(); });
+}
 function psClose() { $('#psModal').hidden = true; document.body.style.overflow = ''; }
 
 // ── 侧栏 ──
@@ -543,6 +765,7 @@ function renderAside() {
 function render() {
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === state.view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + state.view));
+  if (state.view !== 'ps') $('.layout').classList.remove('wide');
   ({ ps: renderPs, free: renderFree, steam: renderSteam, sales: renderSales, console: renderConsole })[state.view]();
   renderAside();
 }
@@ -554,19 +777,35 @@ function toast(msg) {
 
 document.addEventListener('click', ev => {
   let b;
-  if ((b = ev.target.closest('#viewSeg button'))) { state.view = b.dataset.v; store.set('view2', state.view); history.replaceState(null, '', '#' + state.view); render(); scrollTo(0, 0); }
+  if ((b = ev.target.closest('#viewSeg button'))) { state.view = b.dataset.v; store.set('view2', state.view); history.replaceState(null, '', '#' + state.view); lastHash = location.hash; psFromHome = false; render(); scrollTo(0, 0); }
   else if ((b = ev.target.closest('[data-plat]'))) { state.plat = b.dataset.plat; renderFree(); }
   else if ((b = ev.target.closest('[data-loot]'))) { state.loot = b.dataset.loot === '1'; state.plat = 'all'; store.set('loot', state.loot); renderFree(); }
   else if ((b = ev.target.closest('#moreDeals'))) { state.shown += 60; renderSteam(); }
-  else if ((b = ev.target.closest('[data-pstab]'))) { state.psTab = b.dataset.pstab; state.psShown = 30; store.set('psTab', state.psTab); renderPs(); }
-  else if ((b = ev.target.closest('[data-pssub]'))) { state.psSub[state.psTab] = b.dataset.pssub; state.psShown = 30; store.set('psSub', state.psSub); renderPs(); }
   else if ((b = ev.target.closest('#psMore'))) { state.psShown += 30; renderPs(); }
+  else if ((b = ev.target.closest('#psBack'))) { history.length > 1 && psFromHome ? history.back() : (location.hash = '#ps'); }
+  else if ((b = ev.target.closest('[data-psfold]'))) { psFold = !psFold; psSheet(); }
+  else if ((b = ev.target.closest('.rc p'))) { b.classList.toggle('open'); }
   else if ((b = ev.target.closest('[data-psclose]')) || ev.target.id === 'psModal') { psClose(); }
   else if ((b = ev.target.closest('[data-psg]'))) { const n = (PS_CUR.shots || []).length || 1; psGal = (psGal + +b.dataset.psg + n) % n; psSheet(); }
   else if ((b = ev.target.closest('[data-psgi]'))) { psGal = +b.dataset.psgi; psSheet(); }
   else if ((b = ev.target.closest('[data-psi]'))) { psOpen(+b.dataset.psi); }
 });
 document.addEventListener('keydown', ev => { if (ev.key === 'Escape') psClose(); });
+let psFromHome = false, lastHash = location.hash;
+window.addEventListener('hashchange', () => {
+  const v = hashView(), [, wg] = lastHash.split('/'), [, g] = location.hash.split('/');
+  const wasHome = lastHash.split('/')[0] === '#ps' && !wg;
+  lastHash = location.hash;
+  if (!VIEWS.includes(v) || !DATA) return;
+  psClose();
+  if (v === 'ps' && g) {                                        // 进列表页 / 列表页切子项
+    if (wasHome) { state.psTop = scrollY; psFromHome = true; }
+    state.psShown = 30;
+    if (wasHome || wg !== g) scrollTo(0, 0);
+  }
+  state.view = v; store.set('view2', v); render();
+  if (v === 'ps' && !g) { scrollTo(0, psFromHome ? state.psTop : 0); psFromHome = false; }   // 回首页：回到原来的位置
+});
 document.addEventListener('change', ev => {
   const t = ev.target, map = { fSort: 'sort', fPrice: 'price', fDisc: 'disc', fRate: 'rate' };
   if (map[t.id]) { const k = map[t.id]; state[k] = k === 'sort' ? t.value : Number(t.value); store.set(k, state[k]); state.shown = 60; renderSteam(); }

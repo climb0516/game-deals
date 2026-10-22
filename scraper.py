@@ -217,10 +217,14 @@ def ps_grid(cat, size, sort="sales30", filters=None):
     return ps_gql("categoryGridRetrieve", v)["categoryGridRetrieve"]
 
 
-def ps_cover(media, prefer=("GAMEHUB_COVER_ART", "MASTER", "FOUR_BY_THREE_BANNER", "PORTRAIT_BANNER")):
+def ps_cover(media, prefer=("GAMEHUB_COVER_ART", "MASTER", "FOUR_BY_THREE_BANNER", "PORTRAIT_BANNER"), w=440):
     by = {m.get("role"): m.get("url") for m in media or [] if m.get("type", "IMAGE") == "IMAGE"}
     u = next((by[r] for r in prefer if by.get(r)), "")
-    return (u + "?w=440&thumb=false") if u else ""
+    return (u + f"?w={w}&thumb=false") if u else ""
+
+
+def ps_poster(media):
+    return ps_cover(media, ("PORTRAIT_BANNER",), 360)
 
 
 def ps_name(n):
@@ -249,13 +253,14 @@ def ps_product(p):
         "base": money(pr.get("basePrice")), "price": money(pr.get("discountedPrice")), "pct": int(pct.group(1)) if pct else 0,
         "free": bool(pr.get("isFree")), "plus_only": "PS_PLUS" in (pr.get("serviceBranding") or []),
         "preorder": any(s.get("type") == "PREORDER" for s in p.get("skus") or []),
-        "cover": ps_cover(p.get("media")), "shots": ps_shots(p.get("media"), 4), "url": f"{PS_STORE}/product/{p['id']}",
+        "cover": ps_cover(p.get("media")), "poster": ps_poster(p.get("media")), "shots": ps_shots(p.get("media"), 4), "url": f"{PS_STORE}/product/{p['id']}",
     }
 
 
 def ps_concept(c):
     return {"cid": c["id"], "id": (c.get("products") or [{}])[0].get("id"), "name": ps_name(c.get("name")),
-            "cover": ps_cover(c.get("media")), "shots": ps_shots(c.get("media"), 4), "url": f"{PS_STORE}/concept/{c['id']}"}
+            "cover": ps_cover(c.get("media")), "poster": ps_poster(c.get("media")), "shots": ps_shots(c.get("media"), 4),
+            "url": f"{PS_STORE}/concept/{c['id']}"}
 
 
 def ps_enrich(item):
@@ -400,6 +405,181 @@ def ps_hk(prev, cache):
     return out
 
 
+# ── 游戏详情扩展：PS 商店游戏页（星级、完整简介、分级、语言、版本价格）+ Metacritic（媒体 / 玩家评分与评测）──────
+# 体积大，单独写 ps_detail.json，前端打开详情时才读；列表只带几个分数字段
+DETAIL_FILE = ROOT / "ps_detail.json"
+STORE_DAYS, MC_DAYS = 7, 30                      # 商店页（含版本价格）7 天、Metacritic 30 天刷新一次
+EXTRA_BUDGET = 12 * 60                           # 每次运行补新游戏最多花 12 分钟，剩下的下次接着补
+MC = "https://backend.metacritic.com"
+PLAY_TIME = {"< 1 Hour": "不到 1 小时", ">= 80 Hours": "80 小时以上"}
+DIFFICULTY = {"Simple": "很简单", "Easy": "简单", "Just Right": "适中", "Tough": "偏难", "Unforgiving": "非常难"}
+
+
+def html_text(s, n):
+    s = re.sub(r"<br\s*/?>", "\n", s or "", flags=re.I)
+    s = html.unescape(re.sub(r"<[^>]+>", "", s))
+    # 去掉开头的购买须知（「购买该产品后可同时下载 PS4 / PS5 版」「※另有套装包」），空行并成一个
+    lines = [l.strip() for l in re.sub(r"[ \t]+", " ", s).split("\n")]
+    lines = [l for l in lines if not re.search(r"^※|^购买(该|本|此)(产品|商品|游戏)后|请注意避免重复购买|^本(产品|商品)(包含|为)", l)]
+    return re.sub(r"\n{2,}", "\n", "\n".join(lines)).strip()[:n]
+
+
+def ps_store_page(cid):
+    """concept 页面服务端渲染的 JSON：星级评分、完整简介、年龄分级、语音 / 字幕语言、各版本（标准 / 豪华…）价格。"""
+    t = fetch(f"{PS_STORE}/concept/{cid}", timeout=40)
+    objs = {}
+
+    def walk(o):
+        if isinstance(o, dict):
+            if o.get("__typename"):
+                objs.setdefault(o["__typename"], []).append(o)
+            for v in o.values():
+                walk(v)
+        elif isinstance(o, list):
+            for v in o:
+                walk(v)
+    for blob in re.findall(r'<script id="env:[^"]+" type="application/json">(.*?)</script>', t, re.S):
+        try:
+            walk(json.loads(blob))
+        except ValueError:
+            pass
+    if not objs.get("Product"):
+        raise ValueError("concept 页面没有商品数据")
+    out = {}
+    star = max(objs.get("StarRating", []), key=lambda r: (bool(r.get("ratingsDistribution")), r.get("totalRatingsCount") or 0), default=None)
+    if star and star.get("averageRating"):
+        cnt = max((r.get("totalRatingsCount") or 0) for r in objs["StarRating"])
+        out["star"] = {"avg": star["averageRating"], "count": cnt,
+                       "dist": {str(d["rating"]): d.get("percentageRaw", 0) for d in star.get("ratingsDistribution") or []}}
+    desc = next((d["value"] for d in objs.get("Description", []) if d.get("type") == "LONG"), "")
+    out["desc"] = html_text(desc, 2000)
+    cr = next((r for r in objs.get("ProductContentRating", []) if r.get("description")), None)
+    if cr:
+        out["rating"] = {"name": cr["description"], "img": cr.get("url", ""),
+                         "notes": [e["description"] for e in cr.get("interactiveElements") or [] if e.get("description")]}
+
+    def langs(tn, key):
+        by = {e.get("platform"): e.get(key) or [] for e in objs.get(tn, [])}
+        return by.get("PS5") or by.get("PS4") or []
+    out["voice"], out["text"] = langs("SpokenLanguagesByPlatformElement", "spokenLanguages"), langs("ScreenLanguagesByPlatformElement", "screenLanguages")
+    # 版本：同一商品在缓存里出现多次，合并字段；价格来自购买按钮（GameCTA.local）
+    prods = {}
+    for p in objs["Product"]:
+        if p.get("id"):
+            prods.setdefault(p["id"], {}).update({k: v for k, v in p.items() if v not in (None, {}, [])})
+    ctas = {}
+    for c in objs.get("GameCTA", []):
+        loc, m = c.get("local") or {}, re.search(r":([A-Z0-9]{6}-[A-Z0-9]{9}_00-[A-Z0-9]{16})", c.get("id") or "")
+        if m and loc.get("ctaType") == "purchase" and loc.get("priceOrText"):
+            ctas.setdefault(m.group(1), loc)
+    eds = []
+    for pid, p in prods.items():
+        ed = p.get("edition") or {}
+        if p.get("storeDisplayClassification") not in ("FULL_GAME", "GAME_BUNDLE", "PREMIUM_EDITION") or pid not in ctas:
+            continue
+        loc = ctas[pid]
+        eds.append({"id": pid, "name": ps_name(p.get("name")), "edition": ed.get("name") or "", "features": (ed.get("features") or [])[:8],
+                    "order": ed.get("ordering") or 99, "price": loc.get("priceOrText"), "orig": loc.get("originalPrice") or "",
+                    "badge": loc.get("discountBadgeText") or "", "launch": (loc.get("launchPrice") or {}).get("price") or "",
+                    "low30": re.sub(r"^.*?：", "", loc.get("lowestRecentPrice") or "")})
+    out["editions"] = sorted(eds, key=lambda e: (e["order"], e["name"]))[:6]
+    return out
+
+
+def mc_norm(s):
+    return re.sub(r"[^a-z0-9]", "", (s or "").lower().replace("&", "and"))
+
+
+def mc_clean(en):
+    s = re.sub(r"[™®©]", "", en or "")
+    s = re.sub(r"\s*[\(（]?\b(PS4|PS5)\b(\s*(&|and|/)\s*(PS4|PS5))?[\)）]?", " ", s)
+    s = re.sub(r"\s*[-–:]?\s*\b(Standard|Digital Deluxe|Deluxe|Digital|Complete|Gold|Ultimate|Premium|Launch)\s+Edition\b", "", s, flags=re.I)
+    return re.sub(r"\s+", " ", s).strip(" -–:")
+
+
+def metacritic(en, year):
+    """按英文名搜 Metacritic；名字规范化后完全一致才算同一个游戏（港服发售日常是移植 / 重制日期，只在同名多作时用年份挑），对不上返回 None。"""
+    q = mc_clean(en)
+    if not re.search(r"[A-Za-z]{2}", q):
+        return None
+    items = json.loads(fetch(f"{MC}/finder/metacritic/search/{urllib.parse.quote(q)}/web?offset=0&limit=12&mcoTypeId=13",
+                             headers={"Accept": "application/json"}))["data"]["items"]
+    cands = [i for i in items if i.get("type") == "game-title" and mc_norm(i.get("title")) == mc_norm(q)]
+    if year and len(cands) > 1:                  # 同名多作（重制 / 新作）：取年份最近的，差 3 年以上都不认
+        cands = [i for i in cands if i.get("premiereYear") and abs(i["premiereYear"] - year) <= 3]
+        cands.sort(key=lambda i: abs(i["premiereYear"] - year))
+    if not cands:
+        return None
+    slug = cands[0]["slug"]
+    comps = {c["meta"].get("componentName"): c.get("data") or {} for c in json.loads(fetch(
+        f"{MC}/composer/metacritic/pages/games/{slug}/web?contentOnly=true", headers={"Accept": "application/json"}))["components"]}
+    cs, us = (comps.get("critic-score-summary") or {}).get("item") or {}, (comps.get("user-score-summary") or {}).get("item") or {}
+    prod = (comps.get("product") or {}).get("item") or {}
+    stats = (comps.get("game-stats") or {}).get("item") or {}
+    top = lambda l: max([r for r in l or [] if (r.get("total") or 0) >= 3], key=lambda r: r["total"], default={}).get("label", "")
+    pt = top(stats.get("play_time"))
+    critic = [{"src": r.get("publicationName"), "score": r.get("score"), "quote": (r.get("quote") or "")[:400], "url": r.get("url") or "",
+               "date": r.get("date")} for r in ((comps.get("critic-reviews") or {}).get("item") or {}).get("default") or [] if r.get("quote")][:6]
+    users = [{"author": r.get("author"), "score": r.get("score"), "quote": r["quote"][:500], "date": r.get("date")}
+             for r in ((comps.get("user-reviews") or {}).get("item") or {}).get("default") or []
+             if not r.get("spoiler") and 30 <= len(r.get("quote") or "") <= 1200][:4]
+    if cs.get("score") is None and us.get("score") is None and not critic:
+        return None
+    return {"slug": slug, "title": prod.get("title") or cands[0].get("title"), "year": prod.get("premiereYear"), "must": bool(prod.get("mustPlay")),
+            "score": cs.get("score"), "count": cs.get("reviewCount"), "sentiment": cs.get("sentiment"),
+            "uscore": us.get("score"), "ucount": us.get("reviewCount"), "usentiment": us.get("sentiment"),
+            "playtime": PLAY_TIME.get(pt) or re.sub(r"~(\d+) Hours?", r"约 \1 小时", pt), "difficulty": DIFFICULTY.get(top(stats.get("difficulty")), ""),
+            "critic": critic, "users": users, "url": f"https://www.metacritic.com/game/{slug}/"}
+
+
+def ps_extras(pshk, plus):
+    """给首页各栏目和各列表前几屏的游戏补详情（约 250 款），按缓存日期只补过期 / 新出现的；把分数挂回列表项。"""
+    old = json.loads(DETAIL_FILE.read_text("utf-8")).get("games", {}) if DETAIL_FILE.exists() else {}
+    today = datetime.now(CST).date()
+    stale = lambda d, n: not d or d < (today - timedelta(days=n)).isoformat()
+    deals = pshk.get("deals", [])
+    want = deals[:90] + [x for x in deals if x.get("catalog")] + [x for k in ("top_sales", "top_downloads", "f2p", "new_release", "new_hot", "preorder")
+                                                                   for x in pshk.get(k, [])]
+    names = {nk(g["name"]) for k in ("monthly", "catalog") for g in plus.get(k, [])}
+    want += [x for l in pshk.values() for x in l if nk(x.get("name"))[:6] and any(nk(x["name"]).startswith(n[:6]) for n in names if n)]
+    order = list(dict.fromkeys(x["cid"] for x in want if x.get("cid")))
+    games, t0, done = {}, time.time(), [0, 0]
+    for cid in order:
+        g = dict(old.get(cid, {}))
+        x = next(i for i in want if i.get("cid") == cid)
+        if time.time() - t0 < EXTRA_BUDGET:
+            if stale(g.get("s_d"), STORE_DAYS):
+                try:
+                    g["s"], g["s_d"] = ps_store_page(cid), today.isoformat()
+                    done[0] += 1
+                except Exception as e:
+                    print("  store page fail", cid, e)
+                time.sleep(0.3)
+            if stale(g.get("m_d"), MC_DAYS) and x.get("en"):
+                try:
+                    g["m"], g["m_d"] = metacritic(x["en"], int(x["release"][:4]) if x.get("release") else None), today.isoformat()
+                    done[1] += 1
+                except Exception as e:
+                    print("  metacritic fail", x.get("en"), e)
+                time.sleep(0.4)
+        if g:
+            games[cid] = g
+    # 分数挂回列表（首页「高分佳作」、列表角标用）
+    for l in pshk.values():
+        for x in l:
+            g = games.get(x.get("cid")) or {}
+            m, s = g.get("m") or {}, g.get("s") or {}
+            x["mc"], x["mcu"], x["star"] = m.get("score"), m.get("uscore"), (s.get("star") or {}).get("avg")
+    DETAIL_FILE.write_text(json.dumps({"updated": datetime.now(CST).isoformat(timespec="seconds"), "games": games},
+                                      ensure_ascii=False, separators=(",", ":")), "utf-8")
+    print("extras", len(order), "store new", done[0], "mc new", done[1], "mc matched", sum(1 for g in games.values() if g.get("m")))
+    return games
+
+
+def nk(n):
+    return re.sub(r"[\s：:·™®《》()（）\-]", "", n or "").lower()
+
+
 def ps_plus_hk():
     """PS Plus 官方港服中文页：本月会员免费游戏（Essential）、游戏目录本月新增（Extra / Premium），带配图。"""
     t = fetch("https://www.playstation.com/zh-hans-hk/ps-plus/whats-new/", timeout=40)
@@ -542,6 +722,8 @@ def main():
     pshk = run("PS 港服商店", lambda: ps_hk(prev_enr, ps_cache), "ps_hk", count=lambda v: len(v["deals"])) or {}
     psplus = run("PS Plus 港服", ps_plus_hk, "ps_plus_hk", count=lambda v: len(v["monthly"]) + len(v["catalog"])) or {}
     gpass = run("Xbox Game Pass", game_pass, "game_pass") or []
+    if pshk:
+        run("Metacritic 评分评测", lambda: ps_extras(pshk, psplus), "_none", count=lambda v: sum(1 for g in v.values() if g.get("m")))
 
     # 国区价格历史：每天保留当天最后一次价格（appid -> {date: price}），用来判断「国区近 N 天最低」
     hist = old.get("price_history", {})
