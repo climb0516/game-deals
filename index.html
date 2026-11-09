@@ -212,6 +212,18 @@
     .ti:hover .nm b { color: var(--accent); }
     /* 列表页 */
     .lhead { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    /* PS 列表页：新开一层从右侧滑入盖在首页上，返回时滑走；首页一直在底下不动（滚动位置不变）。层级低于游戏详情弹框 */
+    html { scrollbar-gutter: stable; }
+    html.gd-layered { overflow: hidden; }
+    .gd-dim { position: fixed; inset: 0; z-index: 49; background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .34s ease; }
+    .gd-dim.on { opacity: 1; }
+    .gd-layer { position: fixed; inset: 0; z-index: 50; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: var(--bg);
+      box-shadow: -12px 0 32px rgba(0,0,0,.3); transform: translateX(100%); visibility: hidden; transition: transform .34s cubic-bezier(.2,.8,.2,1), visibility 0s linear .34s; }
+    .gd-layer.in { transform: none; visibility: visible; transition: transform .34s cubic-bezier(.2,.8,.2,1); }
+    .gd-layer.noanim, .gd-layer.dragging { transition: none; }
+    .gd-lview { max-width: 1240px; margin: 0 auto; padding: 0 20px 60px; }
+    .gd-layer .lhead { position: sticky; top: 0; z-index: 5; margin: 0 -20px 12px; padding: 12px 20px; background: var(--bg); border-bottom: 1px solid var(--line); }
+    @media (prefers-reduced-motion: reduce) { .gd-layer, .gd-dim { transition: none; } }
     .back { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line-2); font-size: 20px; display: grid; place-items: center; flex-shrink: 0; }
     .back:hover { background: var(--hover); }
     .lhead h2 { font-size: 22px; font-weight: 800; }
@@ -368,6 +380,7 @@
     @media (max-width: 640px) {
       .topbar-inner { padding: 10px 16px; gap: 10px; }
       .layout { padding: 16px 16px 48px; }
+      .gd-lview { padding: 0 16px 48px; } .gd-layer .lhead { margin: 0 -16px 12px; padding: 10px 16px; }
       .logo small, .updated { display: none; }
       .cols { grid-template-columns: 1fr; }
       .gv { grid-template-columns: 72px minmax(0,1fr); }
@@ -446,7 +459,7 @@ const hashView = () => location.hash.slice(1).split('/')[0];   // #ps/deal/low �
 let DATA = null;
 const state = {
   view: VIEWS.includes(hashView()) ? hashView() : store.get('view2', 'ps'),
-  psSort: store.get('psSort', 'hot'), psShown: 30, psTop: 0,
+  psSort: store.get('psSort', 'hot'), psShown: 30,
   plat: 'all', loot: store.get('loot', false),
   price: store.get('price', 0), disc: store.get('disc', 0), rate: store.get('rate', 0),
   sort: store.get('sort', 'rank'), lowOnly: store.get('lowOnly', false), shown: 60,
@@ -664,7 +677,7 @@ function renderPsList(group, sub) {
   REG = [];
   const raw = psList(group, sub), list = group === 'deal' || group === 'new' && sub !== 'preorder' ? psSorted(raw) : raw;
   const shown = list.slice(0, state.psShown);
-  $('#view-ps').innerHTML = `<div class="lhead"><button class="back" id="psBack" title="返回">‹</button><h2>${g[0]}</h2></div>
+  psLayer().view.innerHTML = `<div class="lhead"><button class="back" id="psBack" title="返回">‹</button><h2>${g[0]}</h2></div>
     <div class="jbar"><div class="jsubs">${g[1].map(([k, n]) => `<a class="${k === sub ? 'on' : ''}" href="#ps/${group}/${k}">${n}<small>${psList(group, k).length}</small></a>`).join('')}</div>
       ${group === 'deal' || group === 'new' && sub !== 'preorder' ? `<select class="sel" id="psSort">${PS_SORT.map(([k, n]) => `<option value="${k}" ${k === state.psSort ? 'selected' : ''}>${n}</option>`).join('')}</select>` : ''}</div>
     ${group === 'deal' && sub === 'low' && !list.length ? '<div class="muted" style="margin:0 0 10px">港服价格从 10/21 开始记录，满 7 天后才标「史低」。</div>' : ''}
@@ -672,10 +685,66 @@ function renderPsList(group, sub) {
     ${list.length > shown.length ? `<div style="text-align:center;margin-top:16px"><button class="btn" id="psMore">加载更多（${shown.length} / ${list.length}）</button></div>` : ''}`;
 }
 
+// 首页始终渲染在底下（REG 以首页为准；列表层打开时 REG 换成列表的，关层时首页重画一次）
 function renderPs() {
   const [, group, sub] = location.hash.split('/');
-  $('.layout').classList.toggle('wide', !!group);
-  group ? renderPsList(group, sub) : renderPsHome();
+  renderPsHome();
+  if (group && state.view === 'ps') { const L = psLayer(), changed = L.key !== group; L.key = group; renderPsList(group, sub); if (changed) L.el.scrollTop = 0; psLayerOpen(); }
+  else psLayerClose();
+}
+// ── PS 列表叠层 ──
+let PSL = null, gdNav = false, gdSwiped = false;
+function psLayer() {
+  if (PSL) return PSL;
+  const dim = document.createElement('div'); dim.className = 'gd-dim';
+  const el = document.createElement('section'); el.className = 'gd-layer';
+  el.innerHTML = '<div class="gd-lview wide"></div>';
+  document.body.append(dim, el);
+  PSL = { el, dim, view: el.firstElementChild, key: null };
+  gdSwipe(el);
+  return PSL;
+}
+function psLayerOpen() {
+  const L = psLayer(); if (L.el.classList.contains('in')) return;
+  L.el.scrollTop = 0;
+  document.documentElement.classList.add('gd-layered');
+  if (gdNav) { void L.el.offsetWidth; requestAnimationFrame(() => { L.el.classList.add('in'); L.dim.classList.add('on'); }); }
+  else { L.el.classList.add('noanim', 'in'); L.dim.classList.add('on'); void L.el.offsetWidth; L.el.classList.remove('noanim'); }   // 直接打开的链接：不播进场
+  console.debug('[PS] 打开列表层');
+}
+function psLayerClose() {
+  if (!PSL || !PSL.el.classList.contains('in')) return;
+  const L = PSL, anim = gdNav && !gdSwiped;
+  gdSwiped = false; L.key = null;
+  if (!anim) L.el.classList.add('noanim');
+  L.el.classList.remove('in'); L.el.style.transform = ''; L.dim.classList.remove('on');
+  document.documentElement.classList.remove('gd-layered');
+  const clear = () => { if (!L.el.classList.contains('in')) L.view.innerHTML = ''; };
+  if (anim) setTimeout(clear, 400); else { clear(); void L.el.offsetWidth; L.el.classList.remove('noanim'); }
+  console.debug('[PS] 关闭列表层');
+}
+// 手机右滑返回（安卓）：从左边缘向右拖动列表层；iOS 有系统手势，让给系统
+function gdSwipe(el) {
+  if (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) return;
+  let x0 = null, y0 = 0, dx = 0, t0 = 0, active = false;
+  el.addEventListener('touchstart', e => {
+    if (e.touches.length !== 1 || !$('#psModal').hidden) return;
+    const t = e.touches[0]; if (t.clientX > 28) return;
+    x0 = t.clientX; y0 = t.clientY; dx = 0; t0 = Date.now(); active = false;
+  }, { passive: true });
+  el.addEventListener('touchmove', e => {
+    if (x0 == null) return;
+    const t = e.touches[0]; dx = Math.max(0, t.clientX - x0);
+    if (!active) { if (Math.abs(t.clientY - y0) > 12 && Math.abs(t.clientY - y0) > dx) { x0 = null; return; } if (dx < 10) return; active = true; el.classList.add('dragging'); }
+    el.style.transform = `translateX(${dx}px)`;
+  }, { passive: true });
+  el.addEventListener('touchend', () => {
+    if (x0 == null) return;
+    const done = active && (dx > innerWidth / 3 || (dx > 60 && dx / (Date.now() - t0) > 0.5));
+    x0 = null; el.classList.remove('dragging');
+    if (done) { el.style.transform = `translateX(${innerWidth}px)`; gdSwiped = true; setTimeout(() => $('#psBack')?.click(), 220); }
+    else el.style.transform = '';
+  });
 }
 
 // ── 详情弹窗：基础信息先出，ps_detail.json（评分、评测、版本）读到后补上 ──
@@ -765,7 +834,6 @@ function renderAside() {
 function render() {
   document.querySelectorAll('#viewSeg button').forEach(b => b.classList.toggle('active', b.dataset.v === state.view));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + state.view));
-  if (state.view !== 'ps') $('.layout').classList.remove('wide');
   ({ ps: renderPs, free: renderFree, steam: renderSteam, sales: renderSales, console: renderConsole })[state.view]();
   renderAside();
 }
@@ -798,13 +866,14 @@ window.addEventListener('hashchange', () => {
   lastHash = location.hash;
   if (!VIEWS.includes(v) || !DATA) return;
   psClose();
-  if (v === 'ps' && g) {                                        // 进列表页 / 列表页切子项
-    if (wasHome) { state.psTop = scrollY; psFromHome = true; }
+  if (v === 'ps' && g) {                                        // 进列表页 / 列表页切子项（列表在叠层里，首页不用滚动）
+    if (wasHome) psFromHome = true;
     state.psShown = 30;
-    if (wasHome || wg !== g) scrollTo(0, 0);
   }
-  state.view = v; store.set('view2', v); render();
-  if (v === 'ps' && !g) { scrollTo(0, psFromHome ? state.psTop : 0); psFromHome = false; }   // 回首页：回到原来的位置
+  state.view = v; store.set('view2', v);
+  gdNav = true;
+  try { render(); if (!(v === 'ps' && g)) psLayerClose(); } finally { gdNav = false; }
+  if (v === 'ps' && !g) psFromHome = false;
 });
 document.addEventListener('change', ev => {
   const t = ev.target, map = { fSort: 'sort', fPrice: 'price', fDisc: 'disc', fRate: 'rate' };
